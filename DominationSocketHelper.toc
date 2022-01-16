@@ -1,9 +1,11 @@
 ## Interface: 90105
 ## Title: Socket Helper
 ## Author: Metriss - Stormrage
-## Version: 2.0
+## Version: @project-version@
 ## SavedVariables: DSHDB
 ## Notes: Helps with changing Gems and Domination Socket Shards
+
+## X-Curse-Project-ID: 507074
 
 #@no-lib-strip@
 libs\libs.xml
