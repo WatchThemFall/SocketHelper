@@ -1,0 +1,25 @@
+## Interface: 90105
+## Title: Socket Helper
+## Author: Metriss - Stormrage
+## Version: @project-version@
+## SavedVariables: DSHDB
+## Notes: Helps with changing Gems and Domination Socket Shards
+
+## X-Curse-Project-ID: 507074
+
+#@no-lib-strip@
+libs\libs.xml
+#@end-no-lib-strip@
+
+#locales
+locales\enUS.lua
+locales\ruRU.lua
+locales\deDE.lua
+locales\esES.lua
+locales\frFR.lua
+locales\zhCN.lua
+locales\zhTW.lua
+
+main.lua
+ldb.lua
+options.lua
