@@ -5,10 +5,10 @@ name: Package and release
 # this will target only tags, and not all pushes to the master branch.
 # this part can be heavily customized to your liking, like targeting only tags that match a certain word,
 # other branches or even pullrequests.
-on:
-  push:
-    tags:
-      - '**'
+on: push
+ # push:
+   # tags:
+    #  - '**'
 
 # a workflow is built up as jobs, and within these jobs are steps
 jobs:
@@ -21,7 +21,7 @@ jobs:
 
     # specify the environment variables used by the packager, matching the secrets from the project on GitHub
     env:
-      CF_API_KEY: ${{ secrets.CF_API_TOKEN }}
+      CF_API_KEY: ${{ secrets.CF_API_KEY }}
       GITHUB_OAUTH: ${{ secrets.GITHUB_TOKEN }}  # "GITHUB_TOKEN" is a secret always provided to the workflow
                                                  # for your own token, the name cannot start with "GITHUB_"
 
@@ -38,4 +38,4 @@ jobs:
       - name: Package and release for retail
         uses: BigWigsMods/packager@v1
         with:
-          args: -g retail -m .pkgmeta -p 507074
+          args: -g 9.1.5 -m .pkgmeta -p 507074
