@@ -370,9 +370,9 @@ function DSH:UpdateGemsInBags()
 		for s = 1, GetContainerNumSlots(b) do
 			local itemLink = GetContainerItemLink(b, s)
 			if itemLink then
-				local itemID, itemType, itemSubType, _, icon, _, _ = GetItemInfoInstant(itemLink) 
-				if itemType == "Gem" then
-					if itemSubType ~= "Other" then
+				local itemID, _, _, _, icon, itemTypeID, itemSubTypeID = GetItemInfoInstant(itemLink) 
+				if itemTypeID == 3 then --3 = gem
+					if itemSubTypeID ~= 9 then --9 = other
 						addGemToTable(itemID, itemLink, itemID)
 					elseif shardIDs[itemID] then
 						addGemToTable(shardIDs[itemID], itemLink, itemID)
