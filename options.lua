@@ -53,7 +53,7 @@ local function createconfig()
 		type = "group",
 		order = 1,
 		--inline = true,
-		name = GetAddOnMetadata(addonName, "Title") .." - v".. DSH.VERSION .. "                 Author: ".. DSH.AUTHOR,
+		name = format("|cFFAAD372%s|r %s", DSH.TITLE, DSH.VERSION),
 		childGroups = "tab",
 		get = get,
 		set = set,
