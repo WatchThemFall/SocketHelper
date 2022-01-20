@@ -1,5 +1,5 @@
 ## Interface: 90105
-## Title: Socket Helper
+## Title: Domination Socket Helper
 ## Author: Metriss - Stormrage
 ## Version: @project-version@
 ## SavedVariables: DSHDB
