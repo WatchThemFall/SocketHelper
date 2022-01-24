@@ -98,34 +98,6 @@ function DSH:IsDominationShard(ID)
 	end
 end
 
-function DSH:GemButtonPress(frame)
-	--SBC = slot button container, is pressed from slot
-	if DSH.GBC.isSlotContainer then
-		SocketInventoryItem(DSH.SBC.curSlotBtn.slot)
-	end
-	--Just in case something goes wrong and there is already a shard in there GTFO
-	if GetExistingSocketLink(1) and ((DSH.GBC.isSlotContainer and DSH.SBC.curSlotBtn.isDomination) or GetSocketTypes(1) == "Domination") then
-		DSHPrint(L["ERROR_TEXT"])
-		return
-	end
-	
-	local shardInfo = GetNewSocketInfo(1)
-
-	--GetNewSocketInfo for some reason returns a string of variables?? Maybe I'm dumb
-	--I don't remember why I did this
-	if not shardInfo or (shardInfo and not string.match(shardInfo, frame.itemName)) then
-		DSH:UseContainerItemByID(frame.ID)
-		
-		if DSH.GBC.isSlotContainer then
-			AcceptSockets()
-			CloseSocketInfo()
-		elseif DSH.db.profile.socketwindow.autoaccept then
-			AcceptSockets()
-		end
-		
-	end
-end
-
 function DSH:GetBagFreeSpace()
 	local totalFreeSlots = 0
 	for b = 0, NUM_BAG_SLOTS do
@@ -198,9 +170,9 @@ function DSH:UpdateGemButtons(isDomination, isSlotButton, isRemove)
 					-- dbpr(gemID, gemInfo.itemLink, type(DSH.SBC.curSlotBtn.gemID), DSH.SBC.curSlotBtn.gemLink)
 					if (not isSlotButton and (GetExistingSocketLink(1) ~= gemInfo.itemLink)) 
 						or (isSlotButton and DSH.SBC.curSlotBtn.gemID ~= gemID) then
-						DSH:UpdateGemButton(buttonCount, gemInfo.itemLink, gemInfo.itemID, isDomination)
-						DSH:ToggleButton(DSH.gemButtons[buttonCount], true)
-						buttonCount = buttonCount + 1
+							DSH:UpdateGemButton(buttonCount, gemInfo.itemLink, gemInfo.itemID, isDomination)
+							DSH:ToggleButton(DSH.gemButtons[buttonCount], true)
+							buttonCount = buttonCount + 1
 					end
 				end
 			end
@@ -250,23 +222,127 @@ local function getMatchingSlotButtons(gemLink)
 end
 
 function EF:MODIFIER_STATE_CHANGED(key, down)
-	if not DSH.curGemBtn or not DSH.GBC.isSlotContainer or DSH.GBC.isDomination then return end
+	if not DSH.GBC.curGemBtn or not DSH.GBC.isSlotContainer or DSH.GBC.isDomination or (DSH.SBC.curSlotBtn and not DSH.SBC.curSlotBtn.gemID) then
+		DSH:ToggleInfoTooltip(false, "")
+		return
+	end
 	if key == "LSHIFT" then
 		if down == 1 then
 			-- dbpr(DSH.curSlotBtn.gemLink)
+
 			local slotMatches = getMatchingSlotButtons(DSH.SBC.curSlotBtn.gemLink)
-			-- dbpr(DSH.curGemBtn.itemLink)
-			-- for k, v in pairs(slotMatches) do
-				-- dbpr("slot", v, "matches")
-			-- end
+			--get item link again, the old item link shows up as [] sometimes
+			local newItemLink = select(2, GetItemInfo(DSH.GBC.curGemBtn.itemLink)) or "[]"
+			local tipText = format(L["REPLACE"], DSH.SBC.curSlotBtn.gemLink, newItemLink) --get link again, old item link doesn't load sometimes
+			local newGemCount = GetItemCount(DSH.GBC.curGemBtn.ID)
+			
 			DSH:UpdateCurSlotGlow(slotMatches)
+			
+			for i, slotBtn in pairs(slotMatches) do
+				tipText = tipText .. "\n"..i..": "..slotBtn.itemLink
+				if i == newGemCount and i ~= #slotMatches then
+					tipText = tipText .. "\n\n"..format(L["NOT_ENOUGH_GEMS"], newItemLink, #slotMatches - newGemCount)
+				end
+			end
+			
+			DSH:ToggleInfoTooltip(true, tipText, DSH.GBC)
 		else
 			DSH:UpdateCurSlotGlow({DSH.SBC.curSlotBtn})
+			DSH:ToggleInfoTooltip(true, format(L["REPLACE_TIP"], DSH.SBC.curSlotBtn.gemLink or ""), DSH.GBC)
 		end
 		
 	end
 
 end
+
+-- local function replaceAllSlotGemMatches(frame, isRetry)
+	-- local slotMatches = getMatchingSlotButtons(DSH.SBC.curSlotBtn.gemLink)
+	
+	-- for i, slotBtn in pairs(slotMatches) do
+		
+		-- dbpr(i)
+		-- SocketInventoryItem(slotBtn.slot)
+		
+		-- local oldGemLink = GetExistingSocketLink(1)
+		-- dbpr("OldGem:", oldGemLink)
+		-- if select(1, GetItemInfoInstant(oldGemLink)) ~= frameID then 
+			-- DSH:UseContainerItemByID(frame.ID)
+			-- AcceptSockets()
+			-- local newGemLink = GetExistingSocketLink(1)
+			-- dbpr("NewGem:", newGemLink)
+			-- if (not newGemLink or (newGemLink and (select(1, GetItemInfoInstant(newGemLink)) ~= frame.ID))) and not isRetry then
+				-- replaceAllSlotGemMatches(frame, true)
+				-- dbpr("Error")
+				-- break;
+			-- end
+		-- end
+	-- end
+	-- CloseSocketInfo()
+-- end
+
+local function replaceAllSlotGemMatches(frame, isRetry)
+	local slotMatches = getMatchingSlotButtons(DSH.SBC.curSlotBtn.gemLink)
+	
+	for i, slotBtn in pairs(slotMatches) do
+		dbpr(i)
+		SocketInventoryItem(slotBtn.slot)
+		if not GetExistingSocketLink(1) then break end
+		
+		local oldID = select(1, GetItemInfoInstant(GetExistingSocketLink(1)))
+		dbpr("OLD:", oldID, "REPLACE WITH:", frame.ID)
+		if oldID ~= frame.ID then 
+			DSH:UseContainerItemByID(frame.ID)
+			
+			local newID = GetNewSocketLink(1) and select(1, GetItemInfoInstant(GetNewSocketLink(1))) or nil
+			dbpr("NEW:",newID)
+
+			if not newID or (newID and (newID ~= frame.ID)) then
+				dbpr("ERROR, RETRYING")
+				C_Timer.After(0.1, function()
+					replaceAllSlotGemMatches(frame, true)
+				end)
+				break
+			end
+			
+			AcceptSockets()
+		end
+	end
+	CloseSocketInfo()
+end
+
+
+function DSH:GemButtonPress(frame)
+	--SBC = slot button container, is pressed from slot
+	if DSH.GBC.isSlotContainer then
+		if not DSH.GBC.isDomination and IsShiftKeyDown() then
+			replaceAllSlotGemMatches(frame)
+			return
+		end
+		SocketInventoryItem(DSH.SBC.curSlotBtn.slot)
+	end
+	--Just in case something goes wrong and there is already a shard in there GTFO
+	if GetExistingSocketLink(1) and ((DSH.GBC.isSlotContainer and DSH.SBC.curSlotBtn.isDomination) or GetSocketTypes(1) == "Domination") then
+		DSHPrint(L["ERROR_TEXT"])
+		return
+	end
+	
+	local shardInfo = GetNewSocketInfo(1)
+
+	--GetNewSocketInfo for some reason returns a string of variables?? Maybe I'm dumb
+	--I don't remember why I did this
+	if not shardInfo or (shardInfo and not string.match(shardInfo, frame.itemName)) then
+		DSH:UseContainerItemByID(frame.ID)
+		
+		if DSH.GBC.isSlotContainer then
+			AcceptSockets()
+			CloseSocketInfo()
+		elseif DSH.db.profile.socketwindow.autoaccept then
+			AcceptSockets()
+		end
+		
+	end
+end
+
 
 local function createGemButtonContainer()
 	if not (DSH.DC or DSH.SBC) then return end
@@ -289,7 +365,7 @@ local function createGemButton(i)
 		DSH.gemButtons[i] = CreateFrame ("button", nil, DSH.GBC, "SecureActionButtonTemplate")
 		DSH.gemButtons[i]:SetAttribute("type", "macro")
 	else
-		DSH.gemButtons[i] = CreateFrame ("button", nil, DSH.GBC)
+		DSH.gemButtons[i] = CreateFrame("button", nil, DSH.GBC)
 	end
 	
 	local frame = DSH.gemButtons[i]
@@ -305,8 +381,15 @@ local function createGemButton(i)
 	frame:SetNormalFontObject("GameFontNormal")
 	
 	if type(i) == "number" then
-		frame:SetScript("OnEnter", function() DSH:ToggleItemTooltip(true, frame); EF:RegisterEvent("MODIFIER_STATE_CHANGED"); DSH.curGemBtn = frame; end)
-		frame:SetScript("OnLeave", function() DSH:ToggleItemTooltip(false); EF:UnregisterEvent("MODIFIER_STATE_CHANGED"); DSH.curGemBtn = nil; end)
+		frame:SetScript("OnEnter", function()
+			DSH:ToggleItemTooltip(true, frame)
+			DSH.GBC.curGemBtn = frame;
+
+			EF:RegisterEvent("MODIFIER_STATE_CHANGED")
+			EF:MODIFIER_STATE_CHANGED("LSHIFT", IsShiftKeyDown() and 1 or 0)
+			
+		end)
+		frame:SetScript("OnLeave", function() DSH:UpdateCurSlotGlow({DSH.SBC.curSlotBtn}); DSH:ToggleInfoTooltip(false, ""); DSH:ToggleItemTooltip(false); EF:UnregisterEvent("MODIFIER_STATE_CHANGED"); DSH.GBC.curGemBtn = nil; end)
 		frame:SetScript("OnClick", function() DSH:GemButtonPress(frame) end)
 	end
 	
@@ -837,6 +920,7 @@ local function shardRemovalSuccessful()
 		--call this to update LDB Text
 		-- DSH:UpdateSetContainer()
 	end
+	EF:UnregisterEvent('CHAT_MSG_LOOT')
 	DSH:UpdateRemoveGemButton()
 end
 
@@ -1699,6 +1783,51 @@ function DSH:CreateRemoveButton(parent)
 	button:SetAttribute("type", "macro")
 	button:Hide()
 	return button
+end
+
+local function createInfoTooltip()
+	-- local scale = PLTrader.db.profile.general.scale
+	-- local f = PLT:CreateBackgroundFrame(MAIN_FRAME_WIDTH*scale, MAIN_FRAME_HEIGHT*scale)
+	local f = CreateFrame("Frame", nil, DSH.SBC, "BackdropTemplate")
+	DSH:FormatFrame(f, false)
+	f.text = f:CreateFontString(nil, "overlay", "GameFontNormal")
+	-- f.text:SetFont(PLT_FONT, 10)
+	f.text:SetPoint("TOPLEFT", f, "TOPLEFT", 5, -5)
+	-- f.text:SetWidth((MAIN_FRAME_WIDTH*scale)-10)
+	f.text:SetTextColor (1, 1, 1, 1)
+	f.text:SetJustifyH("LEFT")
+	return f
+end
+
+function DSH:ToggleInfoTooltip(show, text, frame)
+	-- if not frame then return end
+	
+	if show then-- and (DSHrader.db.profile.general.tooltips or frame) then
+	
+		DSH.infoTooltip = DSH.infoTooltip or createInfoTooltip()
+		DSH.infoTooltip.text:SetText(text)
+		
+		local textHeight = DSH.infoTooltip.text:GetStringHeight();
+		local textWidth = DSH.infoTooltip.text:GetStringWidth();
+		DSH.infoTooltip:SetHeight(textHeight + 10)
+		DSH.infoTooltip:SetWidth(textWidth + 10)
+		-- setTooltipWidth(frame)
+
+		DSH.infoTooltip:Show()
+		
+		-- if frame then
+			-- DSH.infoTooltip:SetPoint("TOPLEFT", frame, "TOPRIGHT", 10, 0)
+		-- else
+			-- DSH.infoTooltip:SetPoint("TOPLEFT", DSHFrame, "BOTTOMLEFT", 0, -5)
+		-- end
+		
+		DSH.infoTooltip:SetPoint("TOPLEFT", frame, "TOPRIGHT", 2, -5)
+	
+		DSH.infoTooltip:Show()
+	
+	else
+		if DSH.infoTooltip then DSH.infoTooltip:Hide() end
+	end	
 end
 
 function DSH:ToggleRemoveButton(show)
