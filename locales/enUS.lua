@@ -37,9 +37,11 @@ L["Tel"] = "Tel" --187071
 --Options
 L["O_QUICK_SLOT"] = "Quick Slots"
 L["ENABLE"] = "Enable"
-L["ENABLE_DESC"] = "Enable quick gem slots bar under the character frame."
+L["ENABLE_DESC"] = "Enable the quick gem slots bar under the character frame."
 L["ALWAYS_EMPTY"] = "Always Show Empty"
 L["ALWAYS_EMPTY_DESC"] = "Always show empty gem slots in the quick slot bar."
+L["STAY_OPEN"] = "Stay Open"
+L["STAY_OPEN_DESC"] = "Keep the quick slot bar expanded after you close the character window."
 
 L["SOCKET_WINDOW"] = "Socket Window"
 L["AUTO_ACCEPT"] = "Auto Accept"

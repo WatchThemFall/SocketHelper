@@ -67,6 +67,7 @@ local function createconfig()
 				args = {
 					enable = {
 						order = 2,
+						width = .75,
 						type = "toggle",
 						name = L["ENABLE"],
 						desc = L["ENABLE_DESC"],
@@ -78,7 +79,14 @@ local function createconfig()
 						name = L["ALWAYS_EMPTY"],
 						desc = L["ALWAYS_EMPTY_DESC"],
 						arg = "quickslots.alwaysempty",
-					},					
+					},
+					stayopen = {
+						order = 4,
+						type = "toggle",
+						name = L["STAY_OPEN"],
+						desc = L["STAY_OPEN_DESC"],
+						arg = "quickslots.stayopen",
+					},						
 				},
 			},
 			socketwindow = {

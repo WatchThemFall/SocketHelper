@@ -280,26 +280,35 @@ end
 	-- CloseSocketInfo()
 -- end
 
-local function replaceAllSlotGemMatches(frame, isRetry)
+
+local function replaceAllSlotGemMatches(gemID, isRetry)
 	local slotMatches = getMatchingSlotButtons(DSH.SBC.curSlotBtn.gemLink)
 	
 	for i, slotBtn in pairs(slotMatches) do
 		dbpr(i)
 		SocketInventoryItem(slotBtn.slot)
-		if not GetExistingSocketLink(1) then break end
+		if not GetExistingSocketLink(1) and not isRetry then 
+			dbpr("ERROR: NOT EXISTING SOCKET, RETRYING")
+			C_Timer.After(0.1, function()
+				CloseSocketInfo()
+				replaceAllSlotGemMatches(gemID, true)
+			end)
+			break
+		end
 		
 		local oldID = select(1, GetItemInfoInstant(GetExistingSocketLink(1)))
-		dbpr("OLD:", oldID, "REPLACE WITH:", frame.ID)
-		if oldID ~= frame.ID then 
-			DSH:UseContainerItemByID(frame.ID)
+		dbpr("OLD:", oldID, "REPLACE WITH:", gemID)
+		if oldID ~= gemID then 
+			DSH:UseContainerItemByID(gemID)
 			
 			local newID = GetNewSocketLink(1) and select(1, GetItemInfoInstant(GetNewSocketLink(1))) or nil
 			dbpr("NEW:",newID)
 
-			if not newID or (newID and (newID ~= frame.ID)) then
-				dbpr("ERROR, RETRYING")
+			if not isRetry and (not newID or (newID and (newID ~= gemID))) then
+				dbpr("ERRPR: NEW GEM NOT IN, RETRYING")
 				C_Timer.After(0.1, function()
-					replaceAllSlotGemMatches(frame, true)
+					CloseSocketInfo()
+					replaceAllSlotGemMatches(gemID, true)
 				end)
 				break
 			end
@@ -315,7 +324,7 @@ function DSH:GemButtonPress(frame)
 	--SBC = slot button container, is pressed from slot
 	if DSH.GBC.isSlotContainer then
 		if not DSH.GBC.isDomination and IsShiftKeyDown() then
-			replaceAllSlotGemMatches(frame)
+			replaceAllSlotGemMatches(frame.ID)
 			return
 		end
 		SocketInventoryItem(DSH.SBC.curSlotBtn.slot)
@@ -572,7 +581,10 @@ local function createSlotButtonContainer()
 	frame:SetText(DSH.db.char.quickslots.extended and "<" or ">")
 	frame:SetScript("OnClick", slotExtendClick)
 	frame:RegisterForClicks("LeftButtonDown", "RightButtonDown")
-	frame:SetScript("OnEnter", function() EF:CHARACTER_FRAME_HIDE_GBC() end)
+	frame:SetScript("OnEnter", function()
+		-- if not DSH.db.char.quickslots.extended then slotExtendClick(frame, "LeftButton") end
+		EF:CHARACTER_FRAME_HIDE_GBC()
+	end)
 	return frame
 end
 
@@ -796,8 +808,10 @@ function DSH:UpdateSlotButtons()
 end
 
 function EF:CHARACTER_FRAME_SHOW()
-	--delay because it breaks sometimes if you don't
 	DSH.SBC = DSH.SBC or createSlotButtonContainer()
+	
+	--delay update because it breaks sometimes if you don't
+		--nevermind I did some convoluted bullshit to make it work
 	-- C_Timer.After(0.1, function() DSH:UpdateSlotButtons() end)
 	DSH:UpdateSlotButtons()
 	
@@ -809,6 +823,12 @@ function EF:CHARACTER_FRAME_HIDE_GBC()
 	if DSH.GBC and DSH.GBC.isSlotContainer then DSH.GBC:Hide() end
 	if DSH.SBC then DSH.SBC.curSlotBtn = nil end
 	DSH:UpdateCurSlotGlow()
+	
+	if not CharacterFrame:IsVisible() and not DSH.db.profile.quickslots.stayopen then
+		DSH.db.char.quickslots.extended = false
+		DSH.SBC:SetText(">")
+	end
+	
 end
 
 local function getCorrectFrameScale(frame)
@@ -1918,6 +1938,7 @@ function DSH:InitializeSettings(event, addon)
 			quickslots = {
 				enable = true,
 				alwaysempty = true,
+				stayopen = true,
 			},
 			socketwindow = {
 				enable = true,
