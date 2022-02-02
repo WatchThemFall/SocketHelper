@@ -84,7 +84,16 @@ local shardIDs = {
 		[187063] = "Cor", [187287] = "Cor", [187296] = "Cor", [187305] = "Cor", [187315] = "Cor",
 		[187065] = "Kyr", [187288] = "Kyr", [187297] = "Kyr", [187306] = "Kyr", [187316] = "Kyr",
 		[187071] = "Tel", [187289] = "Tel", [187298] = "Tel", [187307] = "Tel", [187317] = "Tel",
-}	
+}
+
+--used to get frame info which is the same in all localizations?
+local slotNames = {"Head", "Neck", "Shoulder", "Shirt", "Chest",
+				"Waist", "Legs", "Feet", "Wrist", "Hands", 
+				"Finger0", "Finger1", "Trinket0", "Trinket1", "Back"}
+				
+local slotLocalizedNames = {HEADSLOT, NECKSLOT, SHOULDERSLOT, SHIRTSLOT, CHESTSLOT,
+							WAISTSLOT, LEGSSLOT, FEETSLOT, WRISTSLOT, HANDSSLOT,
+							FINGER0SLOT_UNIQUE, FINGER1SLOT_UNIQUE, TRINKET0SLOT_UNIQUE, TRINKET1SLOT_UNIQUE, BACKSLOT}
 
 local function dbpr(...)
 	if not debug then return end
@@ -142,13 +151,25 @@ local function updateGemButtonAnchors(isSlotButton)
 	return col, rows
 end
 
+local function createGemButtonContainer()
+	-- local frame = CreateFrame("Frame", nil, DSH.DC or DSH.SBC,  "BackdropTemplate")
+	local frame = CreateFrame("Frame", nil, CharacterFrame,  "BackdropTemplate")
+
+	--frame:SetPoint("TOPLEFT", ItemSocketingFrame, "BOTTOMLEFT", 0, -2)
+	
+	-- frame:SetSize(ItemSocketingFrame and ItemSocketingFrame:GetWidth() or (9*(BUTTON_SIZE+BUTTON_PAD)), BUTTON_SIZE+(BUTTON_PAD*2))
+	frame:SetBackdrop({bgFile = "Interface\\Tooltips\\UI-Tooltip-Background", tile = true, tileSize = 16, edgeFile = [[Interface\ButtoPLTrader:NS\WHITE8X8]], edgeSize = 1 * EF:GetEdgeScale()})
+	frame:SetBackdropColor(0, 0, 0, .75)
+	frame:SetBackdropBorderColor(0, 0, 0, .9)
+	return frame
+end
 
 function DSH:UpdateGemButtons(isDomination, isSlotButton, isRemove)
 	if not (ItemSocketingFrame and ItemSocketingFrame:IsShown())
 	and not (isSlotButton and CharacterFrame and CharacterFrame:IsShown()) then
 		return
 	end
-
+	
 	local buttonCount = 1
 	
 	if isRemove then
@@ -239,9 +260,12 @@ function EF:MODIFIER_STATE_CHANGED(key, down)
 			DSH:UpdateCurSlotGlow(slotMatches)
 			
 			for i, slotBtn in pairs(slotMatches) do
-				tipText = tipText .. "\n"..i..": "..slotBtn.itemLink
+				tipText = tipText .. "\n"..i..": "..slotBtn.itemLink.. " ("..slotLocalizedNames[slotBtn.slot]..")"
+				-- tipText = tipText .. "\n"..slotLocalizedNames[slotBtn.slot]..": "..slotBtn.itemLink
+
 				if i == newGemCount and i ~= #slotMatches then
 					tipText = tipText .. "\n\n"..format(L["NOT_ENOUGH_GEMS"], newItemLink, #slotMatches - newGemCount)
+					
 				end
 			end
 			
@@ -254,32 +278,6 @@ function EF:MODIFIER_STATE_CHANGED(key, down)
 	end
 
 end
-
--- local function replaceAllSlotGemMatches(frame, isRetry)
-	-- local slotMatches = getMatchingSlotButtons(DSH.SBC.curSlotBtn.gemLink)
-	
-	-- for i, slotBtn in pairs(slotMatches) do
-		
-		-- dbpr(i)
-		-- SocketInventoryItem(slotBtn.slot)
-		
-		-- local oldGemLink = GetExistingSocketLink(1)
-		-- dbpr("OldGem:", oldGemLink)
-		-- if select(1, GetItemInfoInstant(oldGemLink)) ~= frameID then 
-			-- DSH:UseContainerItemByID(frame.ID)
-			-- AcceptSockets()
-			-- local newGemLink = GetExistingSocketLink(1)
-			-- dbpr("NewGem:", newGemLink)
-			-- if (not newGemLink or (newGemLink and (select(1, GetItemInfoInstant(newGemLink)) ~= frame.ID))) and not isRetry then
-				-- replaceAllSlotGemMatches(frame, true)
-				-- dbpr("Error")
-				-- break;
-			-- end
-		-- end
-	-- end
-	-- CloseSocketInfo()
--- end
-
 
 local function replaceAllSlotGemMatches(gemID, isRetry)
 	local slotMatches = getMatchingSlotButtons(DSH.SBC.curSlotBtn.gemLink)
@@ -319,7 +317,6 @@ local function replaceAllSlotGemMatches(gemID, isRetry)
 	CloseSocketInfo()
 end
 
-
 function DSH:GemButtonPress(frame)
 	--SBC = slot button container, is pressed from slot
 	if DSH.GBC.isSlotContainer then
@@ -352,23 +349,10 @@ function DSH:GemButtonPress(frame)
 	end
 end
 
-
-local function createGemButtonContainer()
-	if not (DSH.DC or DSH.SBC) then return end
-	local frame = CreateFrame("Frame", nil, DSH.DC or DSH.SBC,  "BackdropTemplate")
-	--frame:SetPoint("TOPLEFT", ItemSocketingFrame, "BOTTOMLEFT", 0, -2)
-	
-	-- frame:SetSize(ItemSocketingFrame and ItemSocketingFrame:GetWidth() or (9*(BUTTON_SIZE+BUTTON_PAD)), BUTTON_SIZE+(BUTTON_PAD*2))
-	frame:SetBackdrop({bgFile = "Interface\\Tooltips\\UI-Tooltip-Background", tile = true, tileSize = 16, edgeFile = [[Interface\ButtoPLTrader:NS\WHITE8X8]], edgeSize = 1 * EF:GetEdgeScale()})
-	frame:SetBackdropColor(0, 0, 0, .75)
-	frame:SetBackdropBorderColor(0, 0, 0, .9)
-	return frame
-end
-
 local function createGemButton(i)
 	--shard button container
-	
-	DSH.GBC = DSH.GBC or createGemButtonContainer()
+	-- DSH.GBC = DSH.GBC or createGemButtonContainer()
+	if not DSH.GBC then return end
 
 	if i == "remove" then
 		DSH.gemButtons[i] = CreateFrame ("button", nil, DSH.GBC, "SecureActionButtonTemplate")
@@ -423,6 +407,7 @@ local function updateButtonTextLocation(button, pos1, pos2)
 end
 
 function DSH:UpdateGemButton(i, itemLink, itemID, isDomination)
+	
 	if not DSH.gemButtons[i] then
 		createGemButton(i)
 	end
@@ -587,10 +572,6 @@ local function createSlotButtonContainer()
 	end)
 	return frame
 end
-
-local slotNames = {"Head", "Neck", "Shoulder", "Shirt", "Chest",
-				"Waist", "Legs", "Feet", "Wrist", "Hands", 
-				"Finger0", "Finger1", "Trinket0", "Trinket1", "Back"}
 
 local function slotButtonEnter(frame)
 	DSH:UpdateCurSlotGlow({frame}, true)
@@ -890,6 +871,8 @@ local function getFirstSetMatch()
 	end
 end
 
+--If the remove button is being used when combat starts hide it and cancel set load
+--enable it in case it was disabled from being used (the timer that usually renables can't reenable it in combat)
 function EF:PLAYER_REGEN_DISABLED()
 	if DSH.RemoveSetButton then
 		DSH.RemoveSetButton:Enable()
@@ -924,6 +907,7 @@ function DSH:ToggleButton(button, state)
 end
 
 function EF:SOCKET_INFO_CLOSE()
+	dbpr("SOCKET_INFO_CLOSE")
 	EF:UnregisterEvent('CHAT_MSG_LOOT')
 	EF:UnregisterEvent('SOCKET_INFO_CLOSE')
 	if DSH.Input then DSH.Input:SetText("") end
@@ -940,6 +924,7 @@ local function shardRemovalSuccessful()
 		--call this to update LDB Text
 		-- DSH:UpdateSetContainer()
 	end
+	dbpr("REMOVE_SUCCESS")
 	EF:UnregisterEvent('CHAT_MSG_LOOT')
 	DSH:UpdateRemoveGemButton()
 end
@@ -973,12 +958,15 @@ end
 --Disable the remove button while the chisel is on CD
 function EF:UNIT_SPELLCAST_SENT(unit, _, _, spellID)
 	if unit ~= "player" then return end
+	--Chisel cast sent
 	if spellID == 358498 then
 		if DSH.RemoveSetButton then
 			EF:RegisterEvent("CHAT_MSG_LOOT")
+			--Take the current text "Remove [shard]" and makes it grey, disable button"
 			DSH.RemoveSetButton:SetText("|cFF6C6C6C"..DSH.RemoveSetButton.text)
 			DSH.RemoveSetButton:Disable()
 			C_Timer.After(1.3, function()
+				--You can't change secure buttons in combat so exit if in combat,
 				if InCombatLockdown() then return end
 				if DSH.RemoveSetButton:IsVisible() then
 					DSH.RemoveSetButton:SetText(DSH.loadColor..DSH.RemoveSetButton.text)
@@ -1074,7 +1062,7 @@ end
 
 function DSH:LoadSelectedSet()
 	if not DSH.loadingSet then return end
-
+	dbpr("SET LOADED")
 	EF:UnregisterEvent("CHAT_MSG_LOOT")
 	
 	if DSH.currentSet.key == DSH.db.char.sets[DSH.loadingSet].key then
@@ -1609,7 +1597,6 @@ end
 
 local function socketInfoDelayedUpdate()
 	EF:SetScript("OnUpdate", nil)
-	-- EF:RegisterEvent('CHAT_MSG_LOOT')
 	DSH.shardInSocket = false
 	DSH.checkForGems = true
 	
@@ -1896,6 +1883,7 @@ end
 function DSH:GetGemID(itemLink)
 	if not itemLink then return end
 	local gemID = select(4, strsplit(":", itemLink))
+	-- local itemId, enchantId, gem1, gem2, gem3, gem4 = link:match("item:(%d+):(%d+):(%d+):(%d+):(%d+):(%d+)")
 	if gemID then
 		return tonumber(gemID)
 	end
@@ -1949,6 +1937,8 @@ function DSH:InitializeSettings(event, addon)
 		
 	self.db = LibStub("AceDB-3.0"):New("DSHDB", self.defaults)
 end
+
+--"|TInterface\\TargetingFrame\\UI-RaidTargetingIcon_1:0|t"
 
 -- DSH:RegisterChatCommand("dsh", function(msg, editbox)
 	-- local words = {}

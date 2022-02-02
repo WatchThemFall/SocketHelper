@@ -20,7 +20,7 @@ L["NOT_SAVED"] = "Not Saved" --ldb text when your set is not saved
 
 L["REPLACE"] = "Replace %s with %s in:"
 L["REPLACE_TIP"] = "|cFFFC0316Shift|r: Replace All"
-L["NOT_ENOUGH_GEMS"] = "|cFFFC0316Purchase %sx%s to also replace:" --example: Missing [item Link]x3
+L["NOT_ENOUGH_GEMS"] = "|cFFFC0316Purchase %sx%s to also include:" --example: Missing [item Link]x3
 
 --Below goes on shard buttons.
 --ItemID of base item provided if translation is needed
