@@ -94,10 +94,6 @@ local slotNames = {"Head", "Neck", "Shoulder", "Shirt", "Chest",
 				"Waist", "Legs", "Feet", "Wrist", "Hands", 
 				"Finger0", "Finger1", "Trinket0", "Trinket1", "Back"}
 				
-local slotLocalizedNames = {HEADSLOT, NECKSLOT, SHOULDERSLOT, SHIRTSLOT, CHESTSLOT,
-							WAISTSLOT, LEGSSLOT, FEETSLOT, WRISTSLOT, HANDSSLOT,
-							FINGER0SLOT_UNIQUE, FINGER1SLOT_UNIQUE, TRINKET0SLOT_UNIQUE, TRINKET1SLOT_UNIQUE, BACKSLOT}
-
 local function dbpr(...)
 	if not debug then return end
 	print("|cFFF60404DSHDB:|r",...)
@@ -242,6 +238,15 @@ local function getMatchingSlotButtons(gemLink)
 	return slotMatches
 end
 
+local function getSlotLocalizedName(slot)
+    --local slotName = slotLocalizedNames[slotBtn.slot]
+    local slotName = strupper(slotNames[slot]) .. "SLOT"
+    if slot >= 11 and slot <= 14 then slotName = slotName .. "_UNIQUE" end
+    slotName = _G[slotName]
+    return slotName
+
+end
+
 function EF:MODIFIER_STATE_CHANGED(key, down)
 	if not DSH.GBC.curGemBtn or not DSH.GBC.isSlotContainer or DSH.GBC.isDomination or (DSH.SBC.curSlotBtn and not DSH.SBC.curSlotBtn.gemID) then
 		DSH:ToggleInfoTooltip(false, "")
@@ -260,7 +265,7 @@ function EF:MODIFIER_STATE_CHANGED(key, down)
 			DSH:UpdateCurSlotGlow(slotMatches)
 			
 			for i, slotBtn in pairs(slotMatches) do
-				tipText = tipText .. "\n"..i..": "..slotBtn.itemLink.. " ("..slotLocalizedNames[slotBtn.slot]..")"
+				tipText = tipText .. "\n"..i..": "..slotBtn.itemLink.. " ("..getSlotLocalizedName(slotBtn.slot)..")"
 
 				if i == newGemCount and i ~= #slotMatches then
 					tipText = tipText .. "\n\n"..format(L["NOT_ENOUGH_GEMS"], newItemLink, #slotMatches - newGemCount)
@@ -468,8 +473,9 @@ function DSH:UpdateGemsInBags()
 		for s = 1, GetContainerNumSlots(b) do
 			local itemLink = GetContainerItemLink(b, s)
 			if itemLink then
-				local itemID, _, _, _, icon, itemTypeID, itemSubTypeID = GetItemInfoInstant(itemLink) 
-				if itemTypeID == 3 then --3 = gem
+				local itemID, type, subtype, _, icon, itemTypeID, itemSubTypeID = GetItemInfoInstant(itemLink) 
+                if type == "Item Enhancement" then dbpr(type, itemTypeID, subtype, itemSubTypeID) end
+                if itemTypeID == 3 then --3 = gem
 					if itemSubTypeID ~= 9 then --9 = other
 						addGemToTable(itemID, itemLink, itemID)
 					elseif shardIDs[itemID] then
@@ -607,6 +613,8 @@ local function createSlotButton(i)
 	frame:SetNormalFontObject(font)
 	
 	frame.tex = frame:CreateTexture()
+    --frame.slotTex = frame:CreateTexture()
+    --frame.slotTex:SetTexture("Interface\\AddOns\\DominationSocketHelper\\media\\images\\slot_icons.tga")
 
 	frame:SetScript("OnEnter", slotButtonEnter)
 	frame:SetScript("OnLeave", function()
@@ -657,8 +665,18 @@ local function updateGemmedSlotButton(i, gemLink, itemLink, gemID)
 		DSH.slotButtons[i].itemLink = DSH.slotButtons[i].isDomination and gemLink or itemLink
 		DSH.slotButtons[i].tex:SetTexture(select(5, GetItemInfoInstant(gemLink)))
 		DSH.slotButtons[i].tex:SetAllPoints()
-	end
+        --DSH.slotButtons[i].tex:SetPoint("LEFT", DSH.slotButtons[i], "RIGHT")
+        --DSH.slotButtons[i].tex:SetSize(10, 10)
+    end
 end
+
+--local function getTexCoords(slot)
+--    local width = 544
+--    local left = (slot * 32)/1024
+--    local right = ((slot+1) * 32)/1024
+--    print(left, right)
+--    return left, right, 0, 1
+--end
 
 local function updateEmptySlotButton(s, i, slotType, showLink)
 	if not DSH.slotButtons[i] then createSlotButton(i) end
@@ -670,7 +688,13 @@ local function updateEmptySlotButton(s, i, slotType, showLink)
 	DSH.slotButtons[i].itemLink = showLink
 	DSH.slotButtons[i].tex:SetTexture(isDomination and 4095404 or 458977)
 	DSH.slotButtons[i].tex:SetAllPoints()
-	DSH.slotButtons[i]:Show()
+    --DSH.slotButtons[i].tex:SetPoint("LEFT", DSH.slotButtons[i], "RIGHT")
+
+
+    --DSH.slotButtons[i].slotTex:SetTexture("Interface\\AddOns\\DominationSocketHelper\\media\\images\\slot_icons.blp")
+	--DSH.slotButtons[i].slotTex:SetTexCoord (getTexCoords(s-1))
+    --DSH.slotButtons[i].slotTex:SetAllPoints()
+    DSH.slotButtons[i]:Show()
 end
 
 local function hideButtons(btnTable, start)
@@ -728,7 +752,7 @@ local function itemLoaded(itemsFound, itemLink, s)
 	
 	local buttonCount = 1
 	for slotType, slotTypeInfo in pairs(gemSlotInfo) do
-		for s, slotInfo in pairs(slotTypeInfo) do
+		for s, slotInfo in DSH:PairsByKeys(slotTypeInfo) do
 			-- dbpr(slotInfo.gemID)
 			updateEmptySlotButton(s, buttonCount, slotInfo.slotType, slotInfo.itemLink)
 			getSlotGemInfo(buttonCount, slotInfo.gemID, slotInfo.itemLink)
