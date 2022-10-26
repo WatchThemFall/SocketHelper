@@ -17,10 +17,15 @@ local GetSocketItemInfo = GetSocketItemInfo
 local GetInventoryItemLink = GetInventoryItemLink
 
 local GetItemInfoInstant = GetItemInfoInstant
-local GetContainerItemLink = C_Container.GetContainerItemLink
-local PickupContainerItem = C_Container.PickupContainerItem
-local GetContainerNumSlots = C_Container.GetContainerNumSlots
-local GetContainerItemID = C_Container.GetContainerItemID
+--local GetContainerItemLink = C_Container.GetContainerItemLink
+--local PickupContainerItem = C_Container.PickupContainerItem
+--local GetContainerNumSlots = C_Container.GetContainerNumSlots
+--local GetContainerItemID = C_Container.GetContainerItemID
+
+local GetContainerItemLink = GetContainerItemLink
+local PickupContainerItem = PickupContainerItem
+local GetContainerNumSlots = GetContainerNumSlots
+local GetContainerItemID = GetContainerItemID
 
 local NUM_BAG_SLOTS = NUM_BAG_SLOTS
 
