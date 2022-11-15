@@ -22,10 +22,10 @@ local GetItemInfoInstant = GetItemInfoInstant
 --local GetContainerNumSlots = C_Container.GetContainerNumSlots
 --local GetContainerItemID = C_Container.GetContainerItemID
 
-local GetContainerItemLink = GetContainerItemLink
-local PickupContainerItem = PickupContainerItem
-local GetContainerNumSlots = GetContainerNumSlots
-local GetContainerItemID = GetContainerItemID
+local GetContainerItemLink = GetContainerItemLink or C_Container.GetContainerItemLink
+local PickupContainerItem = PickupContainerItem or C_Container.PickupContainerItem
+local GetContainerNumSlots = GetContainerNumSlots or C_Container.GetContainerNumSlots
+local GetContainerItemID = GetContainerItemID or C_Container.GetContainerItemID
 
 local NUM_BAG_SLOTS = NUM_BAG_SLOTS
 
@@ -69,7 +69,7 @@ function EF:ADDON_LOADED(addon)
 		CharacterFrame:HookScript('OnEnter', function() EF:CHARACTER_FRAME_HIDE_GBC() end)
 
 		--GameTooltip:HookScript("OnTooltipSetItem", function() DSH:ItemToolTip() end);
-		
+
 		local name, _ = UnitName("player")
 		if name and name == "Metriss" then
 			debug = true
@@ -166,33 +166,18 @@ function DSH:UpdateGemButtons(isDomination, isSlotButton, isRemove)
 	DSH.GBC.isDomination = isDomination
 	DSH.GBC.isSlotContainer = isSlotButton
 	
-	if isRemove then
-		DSH:UpdateGemButton("remove", nil, 187532, isDomination)
-		DSH.gemButtons["remove"]:SetAttribute("macrotext", "/use item:187532\n/use "..DSH.SBC.curSlotBtn.slot)
-		buttonCount = 2 --lazy way to say a button exists
-	else
-		if isDomination then
-			for _, name in pairs(shardOrder) do
-				if DSH.gemsInBags[name] then
-					DSH:UpdateGemButton(buttonCount, DSH.gemsInBags[name].itemLink, DSH.gemsInBags[name].itemID, isDomination)
-					DSH:ToggleButton(DSH.gemButtons[buttonCount], not GetExistingSocketLink(1))
-					buttonCount = buttonCount + 1
-				end
-			end
-		else
-			for gemID, gemInfo in pairs(DSH.gemsInBags) do
-				if (isSlotButton or buttonCount < 10) then-- and not shardIDs[gemInfo.itemID] then --todo dont overflow the max of 9, add more rows later?
-					-- dbpr(gemID, gemInfo.itemLink, type(DSH.SBC.curSlotBtn.gemID), DSH.SBC.curSlotBtn.gemLink)
-					if (not isSlotButton and (GetExistingSocketLink(1) ~= gemInfo.itemLink)) 
-						or (isSlotButton and DSH.SBC.curSlotBtn.gemID ~= gemID) then
-							DSH:UpdateGemButton(buttonCount, gemInfo.itemLink, gemInfo.itemID, gemInfo.quality, isDomination)
-							DSH:ToggleButton(DSH.gemButtons[buttonCount], true)
-							buttonCount = buttonCount + 1
-					end
-				end
-			end
-		end
-	end
+
+    for gemID, gemInfo in pairs(DSH.gemsInBags) do
+        if (isSlotButton or buttonCount < 10) then-- and not shardIDs[gemInfo.itemID] then --todo dont overflow the max of 9, add more rows later?
+            -- dbpr(gemID, gemInfo.itemLink, type(DSH.SBC.curSlotBtn.gemID), DSH.SBC.curSlotBtn.gemLink)
+            if (not isSlotButton and (GetExistingSocketLink(1) ~= gemInfo.itemLink)) 
+                or (isSlotButton and DSH.SBC.curSlotBtn.gemID ~= gemID) then
+                    DSH:UpdateGemButton(buttonCount, gemInfo.itemLink, gemInfo.itemID, gemInfo.quality, isDomination)
+                    DSH:ToggleButton(DSH.gemButtons[buttonCount], true)
+                    buttonCount = buttonCount + 1
+            end
+        end
+    end
 		
 	if isSlotButton then
 		if buttonCount == 1 then
@@ -277,13 +262,10 @@ end
 local function replaceAllSlotGemMatches(gemID, isRetry)
 	local slotMatches = getMatchingSlotButtons(DSH.SBC.curSlotBtn.gemLink)
 	
-    
 	for i, slotBtn in pairs(slotMatches) do
-		dbpr(i)
-
+		--dbpr(i)
         --dbpr("NExt", slotMatches[i+1].slot)
-
-        --print("THIS SLOT:", slotBtn.slot, "NEXT SLOT:", slotMatches[i+1].slot)
+        --dbpr("THIS SLOT:", slotBtn.slot, "NEXT SLOT:", slotMatches[i+1].slot)
 
 		SocketInventoryItem(slotBtn.slot)
 		if not GetExistingSocketLink(1) and not isRetry then 
@@ -563,7 +545,7 @@ function DSH:InitGemButtons(isDomination, isSlotButton)
 	if not DSH.gemsInBags and not isRemove then return end
 	
 	DSH:UpdateGemButtons(isDomination, isSlotButton, isRemove)
-	DSH:UpdateSetContainer()
+	--DSH:UpdateSetContainer()
 end
 
 
@@ -971,264 +953,7 @@ function EF:SOCKET_INFO_CLOSE()
 end
 
 
-local function getSocketedShardSlotOrItem(shard)
-	
-	--If the item is in your bag you have to use it by item ID
-	if DSH.removeShards[shard] == "Bag" then
-		for b = 0, NUM_BAG_SLOTS do
-			for s = 1, GetContainerNumSlots(b) do
-				local itemLink = select(7, GetContainerItemInfo(b, s))
-				if itemLink then
-					local gemID = DSH:GetGemID(itemLink)
-					if shardIDs[gemID] and shardIDs[gemID] == shard then
-						--dbpr("at",b,s)
-						return GetContainerItemID(b, s)
-					end
 
-				end
-			end
-		end
-	else
-		for s = 1, 10 do
-			local itemLink = GetInventoryItemLink("player", s)
-			local gemID = DSH:GetGemID(itemLink)
-			if DSH:IsDominationShard(gemID) and shardIDs[gemID] == shard then
-				return s
-			end
-		end
-	end
-
-end
-
-local function setRemoveButtonMacro(shard)
-	local slotOrItem = getSocketedShardSlotOrItem(shard)
-	if not slotOrItem then
-		DSHPrint(string.format(L["SHARD_NOT_FOUND"], shard))
-		DSH.RemoveSetButton:Hide()
-		DSH.loadingSet = nil
-		return
-	end
-	
-	local macroText
-	if DSH.removeShards[shard] == "Bag" then
-		macroText = "/use item:187532\n/use item:"..slotOrItem
-	else
-		macroText = "/use item:187532\n/use "..slotOrItem
-	end
-	
-	DSH.RemoveSetButton:SetAttribute("macrotext", macroText)
-end
-
-function DSH:UpdateSetRemoveButtonPosition()
-	if not DSH.RemoveSetButton then return end
-	
-	DSH.RemoveSetButton:SetPoint("LEFT", DSH.loadingButton, "LEFT")
-	DSH.RemoveSetButton:SetFrameStrata("FULLSCREEN_DIALOG")
-	
-	if DSH.RemoveSetButton:GetWidth() > DSH.SetC.setButtonWidth then
-		DSH.SetC:SetWidth((DSH.RemoveSetButton:GetWidth() - SET_BUTTON_HEIGHT)+ SET_BUTTON_HEIGHT*2 + 10)
-	else
-		DSH.SetC:SetWidth(DSH.SetC.setButtonWidth + SET_BUTTON_HEIGHT*2 + 10)
-	end
-	
-end
-
-function DSH:UpdateRemoveGemButton()
-	--DSH.RemoveSetButton = DSH.RemoveSetButton or DSH:CreateRemoveButton(DSH.SetC)
-	if InCombatLockdown() then return end
-
-	if not DSH.RemoveSetButton then
-		DSH.RemoveSetButton = DSH:CreateRemoveButton(DSH.SetC)
-		if not DSH.RemoveSetButton then return end
-		DSH.RemoveSetButton:SetBackdropColor (0, 0, 0, 1)
-		DSH.RemoveSetButton:SetFrameStrata("DIALOG")
-		DSH.RemoveSetButton:SetHeight(SET_BUTTON_HEIGHT)
-		DSH.RemoveSetButton:SetScript("OnEnter", function()
-			if DSH.Delete then DSH.Delete:Hide() end
-			EF:RegisterEvent("UNIT_SPELLCAST_SENT")
-			-- EF:RegisterEvent("CHAT_MSG_LOOT")
-		end)
-		DSH.RemoveSetButton:SetScript("OnLeave", function()
-			if DSH.Delete then DSH.Delete:Hide() end
-			EF:UnregisterEvent("UNIT_SPELLCAST_SENT")
-		end)
-	end
-	
-	if DSH.removeShards and next(DSH.removeShards) ~= nil then
-		if DSH:GetBagFreeSpace() > 1 then
-			if not DSH.RemoveSetButton:IsVisible() then
-				DSH.RemoveSetButton:Show()
-				DSH.RemoveSetButton:Enable()
-			end
-			DSH.RemoveSetButton.text = L["REMOVE"].." ["..L[next(DSH.removeShards)].."]"
-			
-			local color = DSH.loadColor
-			if DSH.RemoveSetButton:IsEnabled() then
-				DSH.RemoveSetButton:SetText(color.. DSH.RemoveSetButton.text)
-				DSH.RemoveSetButton:SetWidth(DSH.RemoveSetButton:GetTextWidth() + 10)
-				DSH:UpdateSetRemoveButtonPosition()
-			end
-			
-			setRemoveButtonMacro(next(DSH.removeShards))
-		else
-			DSHPrint(L["BAG_FULL_BUTTON"])
-			DSH.loadingSet = nil
-			DSH.RemoveSetButton:Hide()
-		end
-	else
-		DSH.RemoveSetButton:Hide()
-		DSH.ErrorCount = 0
-		DSH:LoadSelectedSet()
-	end
-end
-
-function DSH:SetButtonPress(button)
-	if DSH.loadingSet and DSH.loadingSet == button.setName then return end
-	if DSH.RemoveSetButton and not DSH.RemoveSetButton:IsEnabled() then return end
-	
-	DSH.removeShards = {}
-	DSH:UpdateGemsInBags()
-	
-	DSH.loadingSet = button.setName
-	DSH.loadingButton = button
-	
-	local shardsInSet = getShardsFromKey(DSH.db.char.sets[button.setName].key)
-
-	for _, shard in pairs(shardsInSet) do
-		if not DSH.gemsInBags[shard] and not tContains(DSH.currentSet.shards, shard) then
-			DSH.removeShards[shard] = "Bag"
-		end
-	end
-	
-	for _, shard in pairs(DSH.currentSet.shards) do
-		if not tContains(shardsInSet, shard) then
-			DSH.removeShards[shard] = "Char"
-		end
-	end
-
-	EF:RegisterEvent('CHAT_MSG_LOOT')
-	DSH:UpdateRemoveGemButton()
-end
-
-function DSH:SetButtonMouseover(enter, button)
-	if enter then
-	
-		DSH.Delete:Show()
-		DSH.Delete.setName = button.setName
-		DSH.Delete:SetPoint("LEFT", button, "RIGHT", 2, 0)
-		
-		if DSH.currentSet.key ~= DSH.db.char.sets[button.setName].key then
-			button:SetText("|cFFFBFF9D"..button.setName)
-		end
-
-	else --exit
-		
-		if DSH.currentSet.key ~= DSH.db.char.sets[button.setName].key then
-			button:SetText(button.setName)
-		end
-
-	end
-
-end
-
-function DSH:DeleteSet(deleteName)
-	if deleteName then
-		DSH.db.char.sets[deleteName] = nil
-		--DSH:UpdateLDBText(getFirstSetMatch())
-		DSH:UpdateSetButtons()
-		DSH.Delete:Hide()
-	end
-end
-
-local function hideSetButtons()
-	for _, button in pairs(DSH.setButtons) do
-		button:Hide()
-	end
-end
-
-local function createSetDeleteButton()
-	local frame = CreateFrame("Button", nil, DSH.SetC)
-	frame:SetNormalTexture("Interface\\Buttons\\UI-GroupLoot-Pass-Up")
-    frame:SetHighlightTexture("Interface\\Buttons\\UI-GroupLoot-Pass-Highlight")
-    frame:SetPushedTexture("Interface\\Buttons\\UI-GroupLoot-Pass-Down")
-	frame:SetSize(SET_BUTTON_HEIGHT, SET_BUTTON_HEIGHT)
-	frame:Hide()
-	frame:SetScript("OnClick", function()
-		local deleteName = frame.setName
-		StaticPopupDialogs["DELETE_SHARD_SET"] = {
-			text = string.format(L["DELETE_SET_CONFIRM"], deleteName),
-			button1 = ACCEPT,--"Yes",
-			button2 = CANCEL,--"No",
-			OnAccept = function()
-				DSH:DeleteSet(deleteName)
-			end,
-			timeout = 0,
-			whileDead = true,
-			hideOnEscape = true,
-			preferredIndex = 3, 
-		}
-
-		StaticPopup_Show("DELETE_SHARD_SET");
-	
-	end)
-	--frame:SetPoint("LEFT", button, "RIGHT", 2, 0)
-	return frame
-end
-
-local function createSetButton(i)
-	DSH.Delete = DSH.Delete or createSetDeleteButton()
-	local button = CreateFrame("Button", nil, i == 1 and DSH.SetC or DSH.setButtons[i-1], "BackdropTemplate")
-
-	button:SetPoint("TOPLEFT", DSH.SetC, "TOPLEFT", 5 + SET_BUTTON_HEIGHT, -1*((SET_BUTTON_HEIGHT*(i-1))+5))
-	
-	button:SetHeight(SET_BUTTON_HEIGHT)
-	DSH:FormatFrame(button, true)
-
-	local icon = button:CreateTexture(nil, 'ARTWORK')
-	icon:SetPoint('RIGHT', button, "LEFT", -3, 0)
-	icon:SetSize(.9*SET_BUTTON_HEIGHT, .9*SET_BUTTON_HEIGHT)
-	icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-	button.Icon = icon
-
-	button:SetBackdropColor (0, 0, 0, 0)
-	button:SetBackdropBorderColor (0, 0, 0, 0)
-	button:SetScript("OnClick", function() DSH:SetButtonPress(button) end)
-	button:SetScript("OnEnter", function() DSH:SetButtonMouseover(true, button) end)
-	button:SetScript("OnLeave", function() DSH:SetButtonMouseover(false, button) end)
-	button:SetText(" ")
-	local fontStr = button:GetFontString()
-	fontStr:SetPoint("LEFT", button, "LEFT")
-	return button
-end
-
-DSH.loadColor = "|cFFF6A504"
-
-local function UpdateSetButton(i, name, match)
-	DSH.setButtons[i] = DSH.setButtons[i] or createSetButton(i)
-	
-	local button = DSH.setButtons[i]
-	
-	if match then
-		button:SetText("|cFF5DFF01"..name)
-	else
-		button:SetText(name)
-	end
-
-	local texture = setIcons[DSH.db.char.sets[name].icon]
-	
-	if texture then
-		button.Icon:SetDesaturated(false)
-	else
-		button.Icon:SetDesaturated(true)
-		texture = "Interface\\Icons\\inv_misc_gem_variety_02"
-	end
-	
-	button.Icon:SetTexture(texture)
-	
-	button:SetWidth(button:GetTextWidth())
-	button.setName = name
-	button:Show()
-end
 
 function DSH:PairsByKeys(t)
     local a = {}
@@ -1244,192 +969,12 @@ function DSH:PairsByKeys(t)
      return iter
 end
 
-function DSH:CreateSetContainer()
-	if DSH.SetC then return end
-	local frame = CreateFrame("Frame", nil, DSH.LDBButton or DSH.GBC,  "BackdropTemplate")
-	frame:SetBackdrop({bgFile = "Interface\\Tooltips\\UI-Tooltip-Background", tile = true, tileSize = 16, edgeFile = [[Interface\ButtoPLTrader:NS\WHITE8X8]], edgeSize = 1 * EF:GetEdgeScale()})
-	frame:SetBackdropColor(0, 0, 0, .75)
-	frame:SetBackdropBorderColor(0, 0, 0, .9)
-	frame:SetFrameStrata("HIGH")
-
-	DSH.SetC = frame
-end
-
-
-function DSH:UpdateSetButtons()
-	if InCombatLockdown() or not DSH.SetC then return end
-	if not DSH.SetC:IsShown() then return end
-
-	-- dbpr("update set buttons")
-	
-	if not DSH.setButtons then DSH.setButtons = {} end
-	
-	hideSetButtons()
-	
-	local width = 0
-	--DSH.currentSet = DSH:GetCurrentShardSet()
-	local i = 1
-	local matchName
-
-	for setName, setInfo in DSH:PairsByKeys(DSH.db.char.sets) do
-		local match = false
-		if setInfo.key == DSH.currentSet.key then
-			match = true
-			matchName = setName
-		end
-		UpdateSetButton(i, setName, match)
-		
-		if DSH.setButtons[i]:GetWidth() > width then width = DSH.setButtons[i]:GetWidth() end
-		
-		i = i + 1
-	end
-	
-	--DSH:UpdateLDBText(matchName)
-	DSH.SetC.setButtonWidth = width
-	
-	--this not great
-	if DSH.RemoveSetButton and DSH.RemoveSetButton:IsShown() and DSH.RemoveSetButton:GetWidth() > width then
-		width = DSH.RemoveSetButton:GetWidth() - SET_BUTTON_HEIGHT
-	end
-	
-	--update bg size
-	local height = (i - 1) * SET_BUTTON_HEIGHT + 10
-	local bgWidth = width + SET_BUTTON_HEIGHT*2 + 10
-	
-	DSH.SetC:SetSize(bgWidth, height)
-	
-	for _, button in pairs(DSH.setButtons) do
-		button:SetWidth(width)
-	end
-
-	if next(DSH.db.char.sets) then
-		DSH.SetC:Show()
-	else
-		DSH.SetC:Hide()
-	end
-	
-end
-
-function DSH:UpdateSetContainer()
-	--dbpr("update")
-	if InCombatLockdown() then return end
-	-- if not DSH.SetC then return end
-	if DSH.LDBOpen then
-		DSH:CreateSetContainer()
-		DSH.SetC:SetParent(DSH.LDBButton)
-		DSH.SetC:ClearAllPoints()
-		local _, y = DSH.LDBButton:GetCenter()
-		if y > GetScreenHeight()/2 then
-			DSH.SetC:SetPoint("TOPLEFT", DSH.LDBButton, "BOTTOMLEFT", -5, 0)
-		else
-			DSH.SetC:SetPoint("BOTTOMLEFT", DSH.LDBButton, "TOPLEFT", -5, 0)
-		end
-		DSH.SetC:SetFrameStrata("HIGH")
-		DSH:UpdateSetRemoveButtonPosition()
-		DSH.SetC:Show()
-		DSH:UpdateSetButtons()
-	else
-		--if the gem button container isn't domination then don't show sets
-		if DSH.GBC and not DSH.GBC.isDomination then 
-			if DSH.SetC then DSH.SetC:Hide() end
-			return
-		end
-		DSH:CreateSetContainer()
-		DSH.SetC:SetParent(DSH.GBC)
-		DSH.SetC:ClearAllPoints()
-		-- if DSH.GBC and DSH.GBC:IsShown() then
-		if ItemSocketingFrame and ItemSocketingFrame:IsShown() then
-			DSH.SetC:SetPoint("TOPLEFT", DSH.GBC, "BOTTOMLEFT", 0, -2)
-		else
-			DSH.SetC:SetPoint("TOPLEFT", DSH.GBC, "TOPRIGHT", 2, 0)
-		end
-		
-		DSH.SetC:Show()
-		DSH:UpdateSetRemoveButtonPosition()
-		DSH:UpdateSetButtons()
-	end
-end
-
-function DSH:CreateSetCreateButtons()
-	if DSH.Input then return end
-	
-	DSH.Input = CreateFrame("EditBox", "", DSH.DC, "BackdropTemplate");
-	DSH.Input:SetPoint("TOPRIGHT", ItemSocketingSocket1, "TOPLEFT", -5, 0)
-	DSH.Input:SetFrameStrata("DIALOG")
-	DSH.Input:SetFont("Fonts\\FRIZQT__.TTF", 12)
-	DSH.Input:SetCursorPosition(1)
-	DSH.Input:SetTextInsets(4, 0, 0, 4)
-	DSH.Input:SetScript("OnTextChanged", function() DSH:InputTextChanged() end)
-	
-	DSH:FormatFrame(DSH.Input)
-	DSH.Input:SetBackdropColor (.25, .25, .25, 1)
-	--DSH.Input:SetBackdropBorderColor (.5, .5, .5)
-
-	DSH.Input:SetSize(120, 19)
-	DSH.Input:SetJustifyH("CENTER")
-	DSH.Input:SetJustifyV("CENTER")
-	DSH.Input:SetMultiLine(false)
-	DSH.Input:SetAutoFocus(false)
-	DSH.Input:SetMaxLetters(15)
-
-	DSH.Save = CreateFrame("Button", "", DSH.Input, "BackdropTemplate")
-	DSH:FormatFrame(DSH.Save, true)
-	
-	DSH.Save:SetPoint("TOP", DSH.Input, "BOTTOM" , 0, -2)
-	DSH.Save:SetWidth(DSH.Input:GetWidth())
-	DSH.Save:SetHeight(DSH.Input:GetHeight())
-	DSH.Save:SetScript("OnClick", function() DSH:SaveButtonPress() end)
-	DSH.Save:SetText(L["SAVE_SET"])
-	
-end
-
-function DSH:ToggleDomContainer(show)
-	-- DSH.DC = DSH.DC or CreateFrame("Frame", nil, ItemSocketingFrame)
-	if show then
-		DSH.DC = DSH.DC or CreateFrame("Frame", nil, ItemSocketingFrame)
-		DSH.DC:Show()
-	elseif DSH.DC then
-		DSH.DC:Hide()
-	end
-end
-
 local function socketInfoDelayedUpdate()
 	EF:SetScript("OnUpdate", nil)
-	DSH.shardInSocket = false
 	DSH.checkForGems = true
-	
-	if DSH.Delete then DSH.Delete:Hide() end
 
-	--Kinda a mess down here but w/e
 	if ItemSocketingFrame:IsShown() then
 		EF:RegisterEvent('SOCKET_INFO_CLOSE')
-		--if GetSocketTypes(1) == "Domination" then
-		--	DSH:ToggleDomContainer(true)
-		--	DSH:CreateSetCreateButtons()
-
-		--	local gemLink = GetExistingSocketLink(1)
-			
-		--	DSH:InitGemButtons(true)
-
-		--	if gemLink then
-		--		local _, gemID = strsplit(":", gemLink)
-
-		--		DSH.BlockFrame = DSH.BlockFrame or DSH:CreateBlockFrame(ItemSocketingSocket1)
-		--		if DSH:IsDominationShard(gemID) then
-		--			DSH.shardInSocket = true
-		--			if DSH:GetBagFreeSpace() > 0 then
-		--				DSH:ToggleRemoveButton(true)
-		--			else--removing shard when bag is full deletes it?
-		--				DSHPrint(L["BAG_FULL_BUTTON"])
-		--				DSH:ToggleRemoveButton(false)
-		--			end
-		--		end
-		--	else
-		--		DSH:ToggleRemoveButton(false)
-		--	end
-			
-		--else
-        --DSH:ToggleDomContainer(false)
         DSH:InitGemButtons(false)
 		--end
 	end
@@ -1511,18 +1056,18 @@ function EF:ITEM_LOCKED(bag, slot)
 	DSH.lockedItem = DSH:GetItemFromBagSlot(bag, slot)
 	
 	--Check if you're dragging a shard with a domination window open
-	if slot and ItemSocketingFrame and ItemSocketingFrame:IsShown() and DSH.shardInSocket then
-		local itemLink = GetContainerItemLink(bag, slot)
-		local _, itemID = strsplit(":", itemLink)
-		if DSH:IsDominationShard(itemID) then
-			DSH:BlockFrameToggle(true)
-		end
-	end
+	--if slot and ItemSocketingFrame and ItemSocketingFrame:IsShown() and DSH.shardInSocket then
+	--	local itemLink = GetContainerItemLink(bag, slot)
+	--	local _, itemID = strsplit(":", itemLink)
+	--	if DSH:IsDominationShard(itemID) then
+	--		DSH:BlockFrameToggle(true)
+	--	end
+	--end
 end
 
 function EF:ITEM_UNLOCKED(bag, slot)
 	--opened socket item changed
-	DSH:BlockFrameToggle(false)
+	--DSH:BlockFrameToggle(false)
 	--dbpr("UNLOCKED BAG:", bag, "slot:", slot)
 	if bag == DSH.lockedSocketBag and slot == DSH.lockedSocketSlot then
 		--dbpr("CHANGED OPEN SOCKETED ITEM")
@@ -1587,37 +1132,13 @@ function DSH:ToggleInfoTooltip(show, text, frame)
 		DSH.infoTooltip:SetHeight(textHeight + 10)
 		DSH.infoTooltip:SetWidth(textWidth + 10)
         local yOff = DSH.GBC.curGemBtn:GetTop() - DSH.SBC:GetTop()
-        --dbpr(yOff)
-        --DSH.infoTooltip:ClearAllPoints()
 
-        --DSH.infoTooltip:SetPoint("TOPLEFT", 0, yOff)
-		-- setTooltipWidth(frame)
-
-		DSH.infoTooltip:Show()
-		
-		-- if frame then
-			-- DSH.infoTooltip:SetPoint("TOPLEFT", frame, "TOPRIGHT", 10, 0)
-		-- else
-			-- DSH.infoTooltip:SetPoint("TOPLEFT", DSHFrame, "BOTTOMLEFT", 0, -5)
-		-- end
-		
 		DSH.infoTooltip:SetPoint("TOPLEFT", frame, "TOPRIGHT", 2, yOff + 19)
-	
 		DSH.infoTooltip:Show()
 	
 	else
 		if DSH.infoTooltip then DSH.infoTooltip:Hide() end
 	end	
-end
-
-
-function DSH:BlockFrameToggle(show)
-	if not DSH.BlockFrame then return end
-	if show then
-		DSH.BlockFrame:Show()
-	else
-		DSH.BlockFrame:Hide()
-	end
 end
 
 function EF:MERCHANT_UPDATE()
@@ -1639,26 +1160,6 @@ function DSH:GetGemID(itemLink, slotCount)
     if gemID then
 		return tonumber(gemID)
 	end
-end
-
-function DSH:CreateBlockFrame(parent)
-	local frame = CreateFrame("button", nil, parent, "BackdropTemplate")
-	frame:SetSize(40, 40)
-	frame:SetBackdrop({bgFile = "Interface\\Tooltips\\UI-Tooltip-Background", tile = true, tileSize = 16, edgeFile = [[Interface\ButtoPLTrader:NS\WHITE8X8]], edgeSize = 2})
-	frame:SetBackdropColor(0, 0, 0, 1)
-	frame:SetBackdropBorderColor(0, 0, 0, 1)
-	frame:SetPoint("CENTER", 0, 0)
-	frame:SetFrameStrata("HIGH")
-
-	local font = CreateFont("DSHButtonFont")
-	font:CopyFontObject("GameFontNormal");
-	font:SetTextColor(1, 1, 1, 1.0);
-	frame:SetNormalFontObject(font)
-	
-	frame:SetText(L["NO"])
-	frame:SetScript("OnClick", function() DSHPrint(L["WHY"]) end)
-	frame:Hide()
-	return frame
 end
 
 function DSH:InitializeSettings(event, addon)
@@ -1708,6 +1209,487 @@ end
 --------------------------------------------------------------
 --Removed Domination Functions, Don't Exist in 10.0----------
 -------------------------------------------------------------
+
+--function DSH:ToggleDomContainer(show)
+--	-- DSH.DC = DSH.DC or CreateFrame("Frame", nil, ItemSocketingFrame)
+--	if show then
+--		DSH.DC = DSH.DC or CreateFrame("Frame", nil, ItemSocketingFrame)
+--		DSH.DC:Show()
+--	elseif DSH.DC then
+--		DSH.DC:Hide()
+--	end
+--end
+
+--function DSH:CreateSetContainer()
+--	if DSH.SetC then return end
+--	local frame = CreateFrame("Frame", nil, DSH.LDBButton or DSH.GBC,  "BackdropTemplate")
+--	frame:SetBackdrop({bgFile = "Interface\\Tooltips\\UI-Tooltip-Background", tile = true, tileSize = 16, edgeFile = [[Interface\ButtoPLTrader:NS\WHITE8X8]], edgeSize = 1 * EF:GetEdgeScale()})
+--	frame:SetBackdropColor(0, 0, 0, .75)
+--	frame:SetBackdropBorderColor(0, 0, 0, .9)
+--	frame:SetFrameStrata("HIGH")
+
+--	DSH.SetC = frame
+--end
+
+
+--function DSH:UpdateSetButtons()
+--	if InCombatLockdown() or not DSH.SetC then return end
+--	if not DSH.SetC:IsShown() then return end
+
+--	-- dbpr("update set buttons")
+	
+--	if not DSH.setButtons then DSH.setButtons = {} end
+	
+--	hideSetButtons()
+	
+--	local width = 0
+--	--DSH.currentSet = DSH:GetCurrentShardSet()
+--	local i = 1
+--	local matchName
+
+--	for setName, setInfo in DSH:PairsByKeys(DSH.db.char.sets) do
+--		local match = false
+--		if setInfo.key == DSH.currentSet.key then
+--			match = true
+--			matchName = setName
+--		end
+--		UpdateSetButton(i, setName, match)
+		
+--		if DSH.setButtons[i]:GetWidth() > width then width = DSH.setButtons[i]:GetWidth() end
+		
+--		i = i + 1
+--	end
+	
+--	--DSH:UpdateLDBText(matchName)
+--	DSH.SetC.setButtonWidth = width
+	
+--	--this not great
+--	if DSH.RemoveSetButton and DSH.RemoveSetButton:IsShown() and DSH.RemoveSetButton:GetWidth() > width then
+--		width = DSH.RemoveSetButton:GetWidth() - SET_BUTTON_HEIGHT
+--	end
+	
+--	--update bg size
+--	local height = (i - 1) * SET_BUTTON_HEIGHT + 10
+--	local bgWidth = width + SET_BUTTON_HEIGHT*2 + 10
+	
+--	DSH.SetC:SetSize(bgWidth, height)
+	
+--	for _, button in pairs(DSH.setButtons) do
+--		button:SetWidth(width)
+--	end
+
+--	if next(DSH.db.char.sets) then
+--		DSH.SetC:Show()
+--	else
+--		DSH.SetC:Hide()
+--	end
+	
+--end
+
+--function DSH:UpdateSetContainer()
+--	--dbpr("update")
+--	if InCombatLockdown() then return end
+--	-- if not DSH.SetC then return end
+--	if DSH.LDBOpen then
+--		DSH:CreateSetContainer()
+--		DSH.SetC:SetParent(DSH.LDBButton)
+--		DSH.SetC:ClearAllPoints()
+--		local _, y = DSH.LDBButton:GetCenter()
+--		if y > GetScreenHeight()/2 then
+--			DSH.SetC:SetPoint("TOPLEFT", DSH.LDBButton, "BOTTOMLEFT", -5, 0)
+--		else
+--			DSH.SetC:SetPoint("BOTTOMLEFT", DSH.LDBButton, "TOPLEFT", -5, 0)
+--		end
+--		DSH.SetC:SetFrameStrata("HIGH")
+--		DSH:UpdateSetRemoveButtonPosition()
+--		DSH.SetC:Show()
+--		DSH:UpdateSetButtons()
+--	else
+--		--if the gem button container isn't domination then don't show sets
+--		if DSH.GBC and not DSH.GBC.isDomination then 
+--			if DSH.SetC then DSH.SetC:Hide() end
+--			return
+--		end
+--		DSH:CreateSetContainer()
+--		DSH.SetC:SetParent(DSH.GBC)
+--		DSH.SetC:ClearAllPoints()
+--		-- if DSH.GBC and DSH.GBC:IsShown() then
+--		if ItemSocketingFrame and ItemSocketingFrame:IsShown() then
+--			DSH.SetC:SetPoint("TOPLEFT", DSH.GBC, "BOTTOMLEFT", 0, -2)
+--		else
+--			DSH.SetC:SetPoint("TOPLEFT", DSH.GBC, "TOPRIGHT", 2, 0)
+--		end
+		
+--		DSH.SetC:Show()
+--		DSH:UpdateSetRemoveButtonPosition()
+--		DSH:UpdateSetButtons()
+--	end
+--end
+
+--function DSH:CreateSetCreateButtons()
+--	if DSH.Input then return end
+	
+--	DSH.Input = CreateFrame("EditBox", "", DSH.DC, "BackdropTemplate");
+--	DSH.Input:SetPoint("TOPRIGHT", ItemSocketingSocket1, "TOPLEFT", -5, 0)
+--	DSH.Input:SetFrameStrata("DIALOG")
+--	DSH.Input:SetFont("Fonts\\FRIZQT__.TTF", 12)
+--	DSH.Input:SetCursorPosition(1)
+--	DSH.Input:SetTextInsets(4, 0, 0, 4)
+--	DSH.Input:SetScript("OnTextChanged", function() DSH:InputTextChanged() end)
+	
+--	DSH:FormatFrame(DSH.Input)
+--	DSH.Input:SetBackdropColor (.25, .25, .25, 1)
+--	--DSH.Input:SetBackdropBorderColor (.5, .5, .5)
+
+--	DSH.Input:SetSize(120, 19)
+--	DSH.Input:SetJustifyH("CENTER")
+--	DSH.Input:SetJustifyV("CENTER")
+--	DSH.Input:SetMultiLine(false)
+--	DSH.Input:SetAutoFocus(false)
+--	DSH.Input:SetMaxLetters(15)
+
+--	DSH.Save = CreateFrame("Button", "", DSH.Input, "BackdropTemplate")
+--	DSH:FormatFrame(DSH.Save, true)
+	
+--	DSH.Save:SetPoint("TOP", DSH.Input, "BOTTOM" , 0, -2)
+--	DSH.Save:SetWidth(DSH.Input:GetWidth())
+--	DSH.Save:SetHeight(DSH.Input:GetHeight())
+--	DSH.Save:SetScript("OnClick", function() DSH:SaveButtonPress() end)
+--	DSH.Save:SetText(L["SAVE_SET"])
+	
+--end
+
+
+--local function socketInfoDelayedUpdate()
+--	EF:SetScript("OnUpdate", nil)
+--	--DSH.shardInSocket = false
+--	DSH.checkForGems = true
+	
+--	--if DSH.Delete then DSH.Delete:Hide() end
+
+--	--Kinda a mess down here but w/e
+--	if ItemSocketingFrame:IsShown() then
+--		EF:RegisterEvent('SOCKET_INFO_CLOSE')
+--		--if GetSocketTypes(1) == "Domination" then
+--		--	DSH:ToggleDomContainer(true)
+--		--	DSH:CreateSetCreateButtons()
+
+--		--	local gemLink = GetExistingSocketLink(1)
+			
+--		--	DSH:InitGemButtons(true)
+
+--		--	if gemLink then
+--		--		local _, gemID = strsplit(":", gemLink)
+
+--		--		DSH.BlockFrame = DSH.BlockFrame or DSH:CreateBlockFrame(ItemSocketingSocket1)
+--		--		if DSH:IsDominationShard(gemID) then
+--		--			DSH.shardInSocket = true
+--		--			if DSH:GetBagFreeSpace() > 0 then
+--		--				DSH:ToggleRemoveButton(true)
+--		--			else--removing shard when bag is full deletes it?
+--		--				DSHPrint(L["BAG_FULL_BUTTON"])
+--		--				DSH:ToggleRemoveButton(false)
+--		--			end
+--		--		end
+--		--	else
+--		--		DSH:ToggleRemoveButton(false)
+--		--	end
+			
+--		--else
+--        --DSH:ToggleDomContainer(false)
+--        DSH:InitGemButtons(false)
+--		--end
+--	end
+--end
+
+--function DSH:BlockFrameToggle(show)
+--	if not DSH.BlockFrame then return end
+--	if show then
+--		DSH.BlockFrame:Show()
+--	else
+--		DSH.BlockFrame:Hide()
+--	end
+--end
+
+--function DSH:CreateBlockFrame(parent)
+--	local frame = CreateFrame("button", nil, parent, "BackdropTemplate")
+--	frame:SetSize(40, 40)
+--	frame:SetBackdrop({bgFile = "Interface\\Tooltips\\UI-Tooltip-Background", tile = true, tileSize = 16, edgeFile = [[Interface\ButtoPLTrader:NS\WHITE8X8]], edgeSize = 2})
+--	frame:SetBackdropColor(0, 0, 0, 1)
+--	frame:SetBackdropBorderColor(0, 0, 0, 1)
+--	frame:SetPoint("CENTER", 0, 0)
+--	frame:SetFrameStrata("HIGH")
+
+--	local font = CreateFont("DSHButtonFont")
+--	font:CopyFontObject("GameFontNormal");
+--	font:SetTextColor(1, 1, 1, 1.0);
+--	frame:SetNormalFontObject(font)
+	
+--	frame:SetText(L["NO"])
+--	frame:SetScript("OnClick", function() DSHPrint(L["WHY"]) end)
+--	frame:Hide()
+--	return frame
+--end
+
+--local function getSocketedShardSlotOrItem(shard)
+	
+--	--If the item is in your bag you have to use it by item ID
+--	if DSH.removeShards[shard] == "Bag" then
+--		for b = 0, NUM_BAG_SLOTS do
+--			for s = 1, GetContainerNumSlots(b) do
+--				local itemLink = select(7, GetContainerItemInfo(b, s))
+--				if itemLink then
+--					local gemID = DSH:GetGemID(itemLink)
+--					if shardIDs[gemID] and shardIDs[gemID] == shard then
+--						--dbpr("at",b,s)
+--						return GetContainerItemID(b, s)
+--					end
+
+--				end
+--			end
+--		end
+--	else
+--		for s = 1, 10 do
+--			local itemLink = GetInventoryItemLink("player", s)
+--			local gemID = DSH:GetGemID(itemLink)
+--			if DSH:IsDominationShard(gemID) and shardIDs[gemID] == shard then
+--				return s
+--			end
+--		end
+--	end
+
+--end
+
+--local function setRemoveButtonMacro(shard)
+--	local slotOrItem = getSocketedShardSlotOrItem(shard)
+--	if not slotOrItem then
+--		DSHPrint(string.format(L["SHARD_NOT_FOUND"], shard))
+--		DSH.RemoveSetButton:Hide()
+--		DSH.loadingSet = nil
+--		return
+--	end
+	
+--	local macroText
+--	if DSH.removeShards[shard] == "Bag" then
+--		macroText = "/use item:187532\n/use item:"..slotOrItem
+--	else
+--		macroText = "/use item:187532\n/use "..slotOrItem
+--	end
+	
+--	DSH.RemoveSetButton:SetAttribute("macrotext", macroText)
+--end
+
+--function DSH:UpdateSetRemoveButtonPosition()
+--	if not DSH.RemoveSetButton then return end
+	
+--	DSH.RemoveSetButton:SetPoint("LEFT", DSH.loadingButton, "LEFT")
+--	DSH.RemoveSetButton:SetFrameStrata("FULLSCREEN_DIALOG")
+	
+--	if DSH.RemoveSetButton:GetWidth() > DSH.SetC.setButtonWidth then
+--		DSH.SetC:SetWidth((DSH.RemoveSetButton:GetWidth() - SET_BUTTON_HEIGHT)+ SET_BUTTON_HEIGHT*2 + 10)
+--	else
+--		DSH.SetC:SetWidth(DSH.SetC.setButtonWidth + SET_BUTTON_HEIGHT*2 + 10)
+--	end
+	
+--end
+
+--function DSH:UpdateRemoveGemButton()
+--	--DSH.RemoveSetButton = DSH.RemoveSetButton or DSH:CreateRemoveButton(DSH.SetC)
+--	if InCombatLockdown() then return end
+
+--	if not DSH.RemoveSetButton then
+--		DSH.RemoveSetButton = DSH:CreateRemoveButton(DSH.SetC)
+--		if not DSH.RemoveSetButton then return end
+--		DSH.RemoveSetButton:SetBackdropColor (0, 0, 0, 1)
+--		DSH.RemoveSetButton:SetFrameStrata("DIALOG")
+--		DSH.RemoveSetButton:SetHeight(SET_BUTTON_HEIGHT)
+--		DSH.RemoveSetButton:SetScript("OnEnter", function()
+--			if DSH.Delete then DSH.Delete:Hide() end
+--			--EF:RegisterEvent("UNIT_SPELLCAST_SENT")
+--			-- EF:RegisterEvent("CHAT_MSG_LOOT")
+--		end)
+--		DSH.RemoveSetButton:SetScript("OnLeave", function()
+--			if DSH.Delete then DSH.Delete:Hide() end
+--			--EF:UnregisterEvent("UNIT_SPELLCAST_SENT")
+--		end)
+--	end
+	
+--	if DSH.removeShards and next(DSH.removeShards) ~= nil then
+--		if DSH:GetBagFreeSpace() > 1 then
+--			if not DSH.RemoveSetButton:IsVisible() then
+--				DSH.RemoveSetButton:Show()
+--				DSH.RemoveSetButton:Enable()
+--			end
+--			DSH.RemoveSetButton.text = L["REMOVE"].." ["..L[next(DSH.removeShards)].."]"
+			
+--			local color = DSH.loadColor
+--			if DSH.RemoveSetButton:IsEnabled() then
+--				DSH.RemoveSetButton:SetText(color.. DSH.RemoveSetButton.text)
+--				DSH.RemoveSetButton:SetWidth(DSH.RemoveSetButton:GetTextWidth() + 10)
+--				DSH:UpdateSetRemoveButtonPosition()
+--			end
+			
+--			setRemoveButtonMacro(next(DSH.removeShards))
+--		else
+--			DSHPrint(L["BAG_FULL_BUTTON"])
+--			DSH.loadingSet = nil
+--			DSH.RemoveSetButton:Hide()
+--		end
+--	else
+--		DSH.RemoveSetButton:Hide()
+--		DSH.ErrorCount = 0
+--		DSH:LoadSelectedSet()
+--	end
+--end
+
+--function DSH:SetButtonPress(button)
+--	if DSH.loadingSet and DSH.loadingSet == button.setName then return end
+--	if DSH.RemoveSetButton and not DSH.RemoveSetButton:IsEnabled() then return end
+	
+--	DSH.removeShards = {}
+--	DSH:UpdateGemsInBags()
+	
+--	DSH.loadingSet = button.setName
+--	DSH.loadingButton = button
+	
+--	local shardsInSet = getShardsFromKey(DSH.db.char.sets[button.setName].key)
+
+--	for _, shard in pairs(shardsInSet) do
+--		if not DSH.gemsInBags[shard] and not tContains(DSH.currentSet.shards, shard) then
+--			DSH.removeShards[shard] = "Bag"
+--		end
+--	end
+	
+--	for _, shard in pairs(DSH.currentSet.shards) do
+--		if not tContains(shardsInSet, shard) then
+--			DSH.removeShards[shard] = "Char"
+--		end
+--	end
+
+--	EF:RegisterEvent('CHAT_MSG_LOOT')
+--	DSH:UpdateRemoveGemButton()
+--end
+
+--function DSH:SetButtonMouseover(enter, button)
+--	if enter then
+	
+--		DSH.Delete:Show()
+--		DSH.Delete.setName = button.setName
+--		DSH.Delete:SetPoint("LEFT", button, "RIGHT", 2, 0)
+		
+--		if DSH.currentSet.key ~= DSH.db.char.sets[button.setName].key then
+--			button:SetText("|cFFFBFF9D"..button.setName)
+--		end
+
+--	else --exit
+		
+--		if DSH.currentSet.key ~= DSH.db.char.sets[button.setName].key then
+--			button:SetText(button.setName)
+--		end
+
+--	end
+
+--end
+
+--function DSH:DeleteSet(deleteName)
+--	if deleteName then
+--		DSH.db.char.sets[deleteName] = nil
+--		--DSH:UpdateLDBText(getFirstSetMatch())
+--		DSH:UpdateSetButtons()
+--		DSH.Delete:Hide()
+--	end
+--end
+
+--local function hideSetButtons()
+--	for _, button in pairs(DSH.setButtons) do
+--		button:Hide()
+--	end
+--end
+
+--local function createSetDeleteButton()
+--	local frame = CreateFrame("Button", nil, DSH.SetC)
+--	frame:SetNormalTexture("Interface\\Buttons\\UI-GroupLoot-Pass-Up")
+--    frame:SetHighlightTexture("Interface\\Buttons\\UI-GroupLoot-Pass-Highlight")
+--    frame:SetPushedTexture("Interface\\Buttons\\UI-GroupLoot-Pass-Down")
+--	frame:SetSize(SET_BUTTON_HEIGHT, SET_BUTTON_HEIGHT)
+--	frame:Hide()
+--	frame:SetScript("OnClick", function()
+--		local deleteName = frame.setName
+--		StaticPopupDialogs["DELETE_SHARD_SET"] = {
+--			text = string.format(L["DELETE_SET_CONFIRM"], deleteName),
+--			button1 = ACCEPT,--"Yes",
+--			button2 = CANCEL,--"No",
+--			OnAccept = function()
+--				DSH:DeleteSet(deleteName)
+--			end,
+--			timeout = 0,
+--			whileDead = true,
+--			hideOnEscape = true,
+--			preferredIndex = 3, 
+--		}
+
+--		StaticPopup_Show("DELETE_SHARD_SET");
+	
+--	end)
+--	--frame:SetPoint("LEFT", button, "RIGHT", 2, 0)
+--	return frame
+--end
+
+--local function createSetButton(i)
+--	DSH.Delete = DSH.Delete or createSetDeleteButton()
+--	local button = CreateFrame("Button", nil, i == 1 and DSH.SetC or DSH.setButtons[i-1], "BackdropTemplate")
+
+--	button:SetPoint("TOPLEFT", DSH.SetC, "TOPLEFT", 5 + SET_BUTTON_HEIGHT, -1*((SET_BUTTON_HEIGHT*(i-1))+5))
+	
+--	button:SetHeight(SET_BUTTON_HEIGHT)
+--	DSH:FormatFrame(button, true)
+
+--	local icon = button:CreateTexture(nil, 'ARTWORK')
+--	icon:SetPoint('RIGHT', button, "LEFT", -3, 0)
+--	icon:SetSize(.9*SET_BUTTON_HEIGHT, .9*SET_BUTTON_HEIGHT)
+--	icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+--	button.Icon = icon
+
+--	button:SetBackdropColor (0, 0, 0, 0)
+--	button:SetBackdropBorderColor (0, 0, 0, 0)
+--	button:SetScript("OnClick", function() DSH:SetButtonPress(button) end)
+--	button:SetScript("OnEnter", function() DSH:SetButtonMouseover(true, button) end)
+--	button:SetScript("OnLeave", function() DSH:SetButtonMouseover(false, button) end)
+--	button:SetText(" ")
+--	local fontStr = button:GetFontString()
+--	fontStr:SetPoint("LEFT", button, "LEFT")
+--	return button
+--end
+
+--DSH.loadColor = "|cFFF6A504"
+
+--local function UpdateSetButton(i, name, match)
+--	DSH.setButtons[i] = DSH.setButtons[i] or createSetButton(i)
+	
+--	local button = DSH.setButtons[i]
+	
+--	if match then
+--		button:SetText("|cFF5DFF01"..name)
+--	else
+--		button:SetText(name)
+--	end
+
+--	local texture = setIcons[DSH.db.char.sets[name].icon]
+	
+--	if texture then
+--		button.Icon:SetDesaturated(false)
+--	else
+--		button.Icon:SetDesaturated(true)
+--		texture = "Interface\\Icons\\inv_misc_gem_variety_02"
+--	end
+	
+--	button.Icon:SetTexture(texture)
+	
+--	button:SetWidth(button:GetTextWidth())
+--	button.setName = name
+--	button:Show()
+--end
+
 --[[
 function EF:BAG_UPDATE_DELAYED()
 	if GetItemCount(EF.WaitingID) == 0 then return end
