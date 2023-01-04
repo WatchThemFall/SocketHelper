@@ -16,6 +16,7 @@ L["SHARD_NOT_FOUND"] = "Error. A %s shard could not be found anywhere in your ba
 L["ERROR_LOADING"] = "Failed to load the shard set. Make sure your currently equipped items have enough domination sockets."
 L["EXTRA_SLOT"] = "Set successfully loaded, but you still have an empty domination socket. Fill the socket(s) and update the set."
 L["DELETE_SET_CONFIRM"] = "Delete %s?"
+L["CONFIRM_REPLACE"] = "Are you sure you want to replace %s with %s?"
 L["NOT_SAVED"] = "Not Saved" --ldb text when your set is not saved
 
 L["REPLACE"] = "Replace %s with %s in:"
