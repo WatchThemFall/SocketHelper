@@ -26,7 +26,7 @@ local PickupContainerItem = PickupContainerItem or C_Container.PickupContainerIt
 local GetContainerNumSlots = GetContainerNumSlots or C_Container.GetContainerNumSlots
 local GetContainerItemID = GetContainerItemID or C_Container.GetContainerItemID
 
-local UNIQUE_EQUIP_PATTERN = _G.ITEM_LIMIT_CATEGORY_MULTIPLE:match('(.+):'):gsub("%-", "%%-") .. ": (.+) %("
+local UNIQUE_EQUIP_PATTERN = _G.ITEM_LIMIT_CATEGORY_MULTIPLE:gsub("%(%%d%)", "%%(%%d%%)"):gsub("%-", "%%-"):gsub('%%s', '(.+)')
 
 local NUM_BAG_SLOTS = NUM_BAG_SLOTS
 
@@ -799,7 +799,7 @@ function DSH:IsGemUnique(gemLink, gemID)
     local text = tostring(_G["DSHScanningTooltipTextLeft3"]:GetText())
     local uniqueType = text:match(UNIQUE_EQUIP_PATTERN)
 
-    --print(uniqueType)
+    dbpr(uniqueType)
 
     DSH.uniqueInfo[gemID] = {isUnique = uniqueType and true or false, uniqueType = uniqueType}
     return DSH.uniqueInfo[gemID].isUnique, uniqueType
