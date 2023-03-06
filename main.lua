@@ -172,7 +172,7 @@ function DSH:UpdateGemButtons(isSlotButton, isRemove)
     for gemID, gemInfo in pairs(DSH.gemsInBags) do
         if (isSlotButton or buttonCount < 10) then-- and not shardIDs[gemInfo.itemID] then --todo dont overflow the max of 9, add more rows later?
             -- dbpr(gemID, gemInfo.itemLink, type(DSH.SBC.curSlotBtn.gemID), DSH.SBC.curSlotBtn.gemLink)
-            if (not isSlotButton and (GetExistingSocketLink(1) ~= gemInfo.itemLink)) 
+            if (not isSlotButton and ((GetExistingSocketLink(1) ~= gemInfo.itemLink) or (ItemSocketingSocket2 and ItemSocketingSocket2:IsShown())))
                 or (isSlotButton and DSH.SBC.curSlotBtn.gemID ~= gemID) then
 
                     DSH:UpdateGemButton(buttonCount, gemInfo.itemLink, gemInfo.itemID, gemInfo.quality, isDomination)
@@ -322,7 +322,7 @@ end
 local function confirmReplace(ID, newGem, oldGem, quality, slot, socketNum)
 
     StaticPopupDialogs["REPLACE_UNIQUE_GEM"] = {
-        text = string.format(L["CONFIRM_REPLACE"], oldGem, newGem),
+        text = string.format(REPLACE_ENCHANT, oldGem, newGem),
         button1 = ACCEPT,--"Yes",
         button2 = CANCEL,--"No",
         OnAccept = function()
@@ -702,6 +702,7 @@ local function createSlotButton(i)
 	end)
 	frame:SetScript("OnClick", function()
 		SocketInventoryItem(frame.slot)
+        DSH:UpdateCurSlotGlow()
 	end)
 
 end
@@ -840,6 +841,7 @@ end
 local function updateEmptySlotButton(s, i, slotType, showLink, socketNum)
 	if not DSH.slotButtons[i] then createSlotButton(i) end
 	local isDomination = ((slotType == "domination") and true)
+    --todo -- change this so all this info is held in a single table
 	DSH.slotButtons[i].slot = s
 	DSH.slotButtons[i].isDomination = isDomination
 	DSH.slotButtons[i].gemLink = nil
