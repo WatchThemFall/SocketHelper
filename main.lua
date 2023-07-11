@@ -426,7 +426,7 @@ function DSH:GemButtonPress(ID, itemName, quality, slot, socketNum, force)
 	if DSH.GBC.isSlotContainer or force then
 
         --if (((quality and DSH.SBC.curSlotBtn.quality) and (quality < DSH.SBC.curSlotBtn.quality)) or DSH.SBC.curSlotBtn.unique) and not force then
-        if DSH.SBC.curSlotBtn.unique and not force then
+        if not force and DSH.SBC.curSlotBtn.unique then
 
             local oldGem = DSH.SBC.curSlotBtn.gemLink
             confirmReplace(ID, select(2, GetItemInfo(ID)), oldGem, quality, DSH.SBC.curSlotBtn.slot, DSH.SBC.curSlotBtn.socketNum)
