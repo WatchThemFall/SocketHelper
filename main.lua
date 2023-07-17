@@ -54,32 +54,64 @@ local function DSHPrint(text)
 	print("|cFFFC0316DSH: |r" .. text)
 end
 
-local PRIMORDIAL_GEMS = {[204012] = true,
-                        [204010] = true,
-                        [204027] = true,
-                        [204001] = true,
-                        [204005] = true,
-                        [204013] = true,
-                        [204002] = true,
-                        [204011] = true,
-                        [204009] = true,
-                        [204019] = true,
-                        [204018] = true,
-                        [204006] = true,
-                        [204021] = true,
-                        [204025] = true,
-                        [204022] = true,
-                        [204008] = true,
-                        [204029] = true,
-                        [204003] = true,
-                        [204004] = true,
-                        [204007] = true,
-                        [204014] = true,
-                        [204000] = true,
-                        [204015] = true,
-                        [204020] = true,
-                        [204030] = true,
+local PRIMORDIAL_GEMS = {
+    [204012] = true,
+    [204010] = true,
+    [204027] = true,
+    [204001] = true,
+    [204005] = true,
+    [204013] = true,
+    [204002] = true,
+    [204011] = true,
+    [204009] = true,
+    [204019] = true,
+    [204018] = true,
+    [204006] = true,
+    [204021] = true,
+    [204025] = true,
+    [204022] = true,
+    [204008] = true,
+    [204029] = true,
+    [204003] = true,
+    [204004] = true,
+    [204007] = true,
+    [204014] = true,
+    [204000] = true,
+    [204015] = true,
+    [204020] = true,
+    [204030] = true,
 }
+
+local TINKERS = {
+    [198298] = true,
+    [198299] = true,
+    [198300] = true,
+
+    [198289] = true,
+    [198290] = true,
+    [198291] = true,
+
+    [201407] = true,
+    [201408] = true,
+    [201409] = true,
+
+    [199188] = true,
+    [199189] = true,
+    [199190] = true,
+
+    [198301] = true,
+    [198302] = true,
+    [198303] = true,
+
+    [198295] = true,
+    [198296] = true,
+    [198297] = true,
+
+    [198304] = true,
+    [198305] = true,
+    [198306] = true,
+}
+
 
 function EF:ADDON_LOADED(addon)
 	if addon == addonName then
@@ -201,21 +233,63 @@ local function isPrimordialGem(gemID)
     if PRIMORDIAL_GEMS[gemID] then return true end
 end
 
+local function isTinkerGem(gemID)
+    if TINKERS[gemID] then return true end
+end
+
 local function socketingItemIsMultiSocket()
     if ItemSocketingSocket2 and ItemSocketingSocket2:IsShown() then return true end
 end
 
+local function getCurrentSocketingType(isSlotButton)
+    local socketType = GetSocketTypes(1)
+
+    if (socketType and socketType == "Primordial") or (isSlotButton and DSH.SBC.curSlotBtn.slotType == EMPTY_SOCKET_PRIMORDIAL) then
+        return "Primordial"
+    end
+
+    if (socketType and socketType == "Tinker") or (isSlotButton and DSH.SBC.curSlotBtn.slotType == EMPTY_SOCKET_TINKER) then
+        return "Tinker"
+    end
+
+    return "Prismatic"
+
+end
+
+local function currentItemAlreadyGemmed(isSlotButton)
+    if not isSlotButton and GetExistingSocketLink(1) then
+        return true
+    end
+
+    if isSlotButton and DSH.SBC.curSlotBtn.gemID then
+        return true
+    end
+    
+end
+
+
 
 local function shouldShowGem(isSlotButton, gemID, gemInfo, socketType)
 
-    local isPrimordialSocket = (socketType and socketType == "Primordial") or (isSlotButton and DSH.SBC.curSlotBtn.isPrimordial)
+    --this is not good but I don't feel like making it better, pls stop adding socket types
 
-    if isPrimordialSocket then
+    if socketType == "Primordial" then
         if not isPrimordialGem(gemID) then
             return
         end
     else --regular socket
         if isPrimordialGem(gemID) then
+            return
+        end
+    end
+
+    if socketType == "Tinker" then
+
+        if not isTinkerGem(gemID) then
+            return
+        end
+    else --regular socket
+        if isTinkerGem(gemID) then
             return
         end
     end
@@ -251,21 +325,46 @@ function DSH:UpdateGemButtons(isSlotButton)
 	end
 	
 	local buttonCount = 1
-    local socketType = GetSocketTypes(1)
+    local socketType = getCurrentSocketingType(isSlotButton)
+    --dbpr(socketType)
 	--DSH.GBC.isDomination = isDomination
 	DSH.GBC.isSlotContainer = isSlotButton
 
-    for gemID, gemInfo in pairs(DSH.gemsInBags) do
-        if shouldShowGem(isSlotButton, gemID, gemInfo, socketType) then
+    if socketType == "Tinker" and currentItemAlreadyGemmed(isSlotButton) then
+        --Tinker ALready Gemmed, add the remove item
+        dbpr("Tinker Already Gemmed")
+        DSH:UpdateGemButton("remove", nil, 202087)
+        buttonCount = 2
 
-            DSH:UpdateGemButton(buttonCount, gemInfo.itemLink, gemInfo.itemID, gemInfo.quality)
+        local itemName = GetSocketItemInfo()
 
-            --need to wait for gem to load before checking if its unique
-            local item = Item:CreateFromItemID(gemInfo.itemID)
-            local button = DSH.gemButtons[buttonCount]
-            item:ContinueOnItemLoad(function() DSH:ToggleButton(button, getGemToggleState(isSlotButton, item:GetItemLink(), gemID)) end)
+        if isSlotButton then
+            DSH.gemButtons["remove"]:SetAttribute("macrotext", "/use item:202087\n/script HideUIPanel(ItemSocketingFrame)\n/click StaticPopup1Button1\n/use "..DSH.SBC.curSlotBtn.slot)
+        else
+            if DSH.lockedSocketSlot and itemName then
+                --item in bag
+                DSH.gemButtons["remove"]:SetAttribute("macrotext", "/use item:202087\n/script HideUIPanel(ItemSocketingFrame)\n/click StaticPopup1Button1\n/use "..itemName.."\n/script C_Container.SocketContainerItem("..DSH.lockedSocketBag..", "..DSH.lockedSocketSlot..")")
+            else
+                --item equipped
+                DSH.gemButtons["remove"]:SetAttribute("macrotext", "/use item:202087\n/click StaticPopup1Button1\n/use "..DSH.lockedSocketBag.."\n/script SocketInventoryItem("..DSH.lockedSocketBag..")")
+            end
+        end
 
-            buttonCount = buttonCount + 1
+        DSH:ToggleButton(DSH.gemButtons["remove"], GetItemCount(202087) > 0 and true or false)
+
+    else
+        for gemID, gemInfo in pairs(DSH.gemsInBags) do
+            if shouldShowGem(isSlotButton, gemID, gemInfo, socketType) then
+
+                DSH:UpdateGemButton(buttonCount, gemInfo.itemLink, gemInfo.itemID, gemInfo.quality)
+
+                --need to wait for gem to load before checking if its unique
+                local item = Item:CreateFromItemID(gemInfo.itemID)
+                local button = DSH.gemButtons[buttonCount]
+                item:ContinueOnItemLoad(function() DSH:ToggleButton(button, getGemToggleState(isSlotButton, item:GetItemLink(), gemID)) end)
+
+                buttonCount = buttonCount + 1
+            end
         end
     end
 		
@@ -571,6 +670,7 @@ function DSH:UpdateGemButton(i, itemLink, itemID, quality, isDomination)
 	end
 
 	local itemIcon = GetItemIcon(itemID)
+    --dbpr("ITEM ICON:", itemIcon)
 	local gemButton = DSH.gemButtons[i]
 	
 	gemButton.tex:SetTexture(itemIcon)
@@ -591,17 +691,17 @@ function DSH:UpdateGemButton(i, itemLink, itemID, quality, isDomination)
 		gemButton.itemName = ""
 	end
 
-	if isDomination then
-		if shardIDs[itemID] then
-			gemButton:SetText(L[shardIDs[itemID]])
-			updateButtonTextLocation(gemButton, "CENTER", "CENTER")
-		else
-			gemButton:SetText("")
-		end
-	else
-		gemButton:SetText(GetItemCount(itemID))
-		updateButtonTextLocation(gemButton, "BOTTOMRIGHT", "BOTTOMRIGHT")
-	end
+	--if isDomination then
+	--	if shardIDs[itemID] then
+	--		gemButton:SetText(L[shardIDs[itemID]])
+	--		updateButtonTextLocation(gemButton, "CENTER", "CENTER")
+	--	else
+	--		gemButton:SetText("")
+	--	end
+	--else
+    gemButton:SetText(GetItemCount(itemID))
+    updateButtonTextLocation(gemButton, "BOTTOMRIGHT", "BOTTOMRIGHT")
+	--end
 	
 	gemButton:Show()
 end
@@ -639,7 +739,7 @@ function DSH:UpdateGemsInBags()
 
                 --if type == "Item Enhancement" then dbpr(itemLink, type, itemTypeID, subtype, itemSubTypeID) end
                 if itemTypeID == 3 then --3 = gem
-                    --dbpr(itemLink, itemTypeID, subtype, itemSubTypeID)
+                    dbpr(itemLink, itemTypeID, subtype, itemSubTypeID)
                     addGemToTable(itemID, itemLink, itemID, getGemQuality(itemLink))
 				end
 			end
@@ -682,6 +782,9 @@ end
 
 
 function DSH:ToggleItemTooltip(show, frame)
+
+    --if not frame then return end
+
 	if show then
 		if frame.itemLink then
 			GameTooltip:SetOwner(frame, "ANCHOR_NONE")
@@ -867,7 +970,7 @@ end
 
 function DSH:IsGemUnique(gemLink, gemID)
 
-    if not gemLink and gemID then return end
+    if not gemLink or not gemID then return end
 
     if DSH.uniqueInfo[gemID] ~= nil then
         return DSH.uniqueInfo[gemID].isUnique, DSH.uniqueInfo[gemID].uniqueType
@@ -918,20 +1021,29 @@ end
 --    return left, right, 0, 1
 --end
 
+local slotTextures = {
+    [EMPTY_SOCKET_PRIMORDIAL] = {ID = 4095404},
+    [EMPTY_SOCKET_PRISMATIC] = {ID = 458977},
+    [EMPTY_SOCKET_TINKER] = {ID = 136264, Atlas = "socket-punchcard-red-background"},
+}
+
 local function updateEmptySlotButton(s, i, slotType, showLink, socketNum)
 	if not DSH.slotButtons[i] then createSlotButton(i) end
 	local isPrimordial = ((slotType == EMPTY_SOCKET_PRIMORDIAL) and true)
     --todo -- change this so all this info is held in a single table
 	DSH.slotButtons[i].slot = s
-	DSH.slotButtons[i].isPrimordial = isPrimordial
+	DSH.slotButtons[i].slotType = slotType
 	DSH.slotButtons[i].gemLink = nil
 	DSH.slotButtons[i].gemID = nil
     DSH.slotButtons[i].unique = nil
     DSH.slotButtons[i].uniqueType = nil
 	DSH.slotButtons[i].itemLink = showLink
     DSH.slotButtons[i].socketNum = socketNum
-	DSH.slotButtons[i].tex:SetTexture(isPrimordial and 4095404 or 458977)
-	DSH.slotButtons[i].tex:SetAllPoints()
+    --458977
+    --136264
+	DSH.slotButtons[i].tex:SetTexture(slotTextures[slotType] and slotTextures[slotType].ID or 458977)
+	DSH.slotButtons[i].tex:SetAtlas((slotTextures[slotType] and slotTextures[slotType].Atlas) and slotTextures[slotType].Atlas or "")
+    DSH.slotButtons[i].tex:SetAllPoints()
     updateGemButtonQualityTexture(DSH.slotButtons[i], nil)
 
     DSH.slotButtons[i]:Show()
@@ -953,7 +1065,7 @@ local function removeGemsFromItemLink(itemLink)
     return item .. ":" .. itemID .. ":" .. enchantID .. ":::::" .. extra, {tonumber(gem1), tonumber(gem2), tonumber(gem3), tonumber(gem4)}
 end
 
-local GEM_SLOT_STRINGS = {[EMPTY_SOCKET_PRISMATIC] = true, [EMPTY_SOCKET_PRIMORDIAL] = true}
+local GEM_SLOT_STRINGS = {[EMPTY_SOCKET_PRISMATIC] = true, [EMPTY_SOCKET_PRIMORDIAL] = true, [EMPTY_SOCKET_TINKER] = true}
 
 
 local function getGemSlotInfo(itemLink)
@@ -1275,6 +1387,7 @@ function EF:ITEM_LOCKED(bag, slot)
 	DSH.lockedSlot = slot
 	DSH.lockedItem = DSH:GetItemFromBagSlot(bag, slot)
 	
+    --dbpr("LOCKED ITEM", DSH.lockedItem)
 	--Check if you're dragging a shard with a domination window open
 	--if slot and ItemSocketingFrame and ItemSocketingFrame:IsShown() and DSH.shardInSocket then
 	--	local itemLink = GetContainerItemLink(bag, slot)
@@ -1290,7 +1403,6 @@ function EF:ITEM_UNLOCKED(bag, slot)
 	--DSH:BlockFrameToggle(false)
 	--dbpr("UNLOCKED BAG:", bag, "slot:", slot)
 	if bag == DSH.lockedSocketBag and slot == DSH.lockedSocketSlot then
-		--dbpr("CHANGED OPEN SOCKETED ITEM")
 		DSH.lockedSocketOpen = false
 	end
 
