@@ -19,6 +19,8 @@ L["DELETE_SET_CONFIRM"] = "Delete %s?"
 L["CONFIRM_REPLACE"] = "Are you sure you want to replace %s with %s?"
 L["UNIQUE_WARNING"] = "WARNING: The gem you are replacing is unique. Auto accept disabled."
 L["NOT_SAVED"] = "Not Saved" --ldb text when your set is not saved
+--L["DUPLICATE_FOUND"] = "You own multiple versions of this item.\nThe macro will probably fail.\nOpen the socket window to remove the gem manually."
+--L["MAUAL_MODE"] = "This macro function does not work if you have multiple versions of the same item in your bags. Using manual mode."
 
 L["REPLACE"] = "Replace %s with %s in:"
 L["REPLACE_TIP"] = "|cFFFC0316Shift|r: Replace All"
