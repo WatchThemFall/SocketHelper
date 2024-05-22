@@ -385,7 +385,7 @@ local function getRemixItemGemType(gemIDs)
 end
 
 local function getSocketedItemsInBags()
-    dbpr("Scanning Bags For Gems")
+    --dbpr("Scanning Bags For Gems")
     local socketedItemsInBags = {}
     for b = 0, NUM_BAG_SLOTS do
         for s = 1, GetContainerNumSlots(b) do
@@ -409,7 +409,7 @@ local function getSocketedItemsInBags()
 
                     local itemID, _, _, _, icon = GetItemInfoInstant(itemLink) 
 
-                    table.insert(socketedItemsInBags, {gemType = gemType, itemLink = itemLink, gemID = true, bag = b, slot = s, itemID = itemID, icon = icon})
+                    table.insert(socketedItemsInBags, {gemType = gemType, itemLink = itemLink, gemIDs = {gem1 or false, gem2 or false, gem3 or false}, bag = b, slot = s, itemID = itemID, icon = icon})
                 end
             end
         end
@@ -419,39 +419,61 @@ local function getSocketedItemsInBags()
     return socketedItemsInBags
 end
 
-local function createBagButton()
+--local function createBagButton()
 
-    DSH.socketedItemsInBags = {}
-    --dbpr("REDO BAGS")
+--    DSH.socketedItemsInBags = {}
+--    --dbpr("REDO BAGS")
 
-    DSH.socketedItemsInBags = getSocketedItemsInBags()
-    --I don't like this, but scan bags for gems and only show if gems found. It's just better this way.
-    if #DSH.socketedItemsInBags == 0 then
-        if DSH.slotButtons["Bags"] then DSH.slotButtons["Bags"]:Hide() end
-    else
-        --dbpr("GOT HERE")
-        DSH:CreateSlotButton("Bags")
-        local slotBtn = DSH.slotButtons["Bags"]
-        slotBtn:SetNormalTexture(133633)
-        slotBtn.qualityTex:Hide()
-        slotBtn.position = buttonCount
-        --slotBtn:SetAtlas("bag-main")
-        if buttonCount > 1 then
-            slotBtn:SetPoint("LEFT", DSH.slotButtons[buttonCount-1],"RIGHT", SLOT_BUTTON_PAD, 0)
-        else
-            slotBtn:SetPoint("LEFT", DSH.SBC, "RIGHT", SLOT_BUTTON_PAD, 0)
-        end
+--    DSH.socketedItemsInBags = getSocketedItemsInBags()
+--    --I don't like this, but scan bags for gems and only show if gems found. It's just better this way.
+--    if #DSH.socketedItemsInBags == 0 then
+--        if DSH.slotButtons["Bags"] then DSH.slotButtons["Bags"]:Hide() end
+--    else
+--        --dbpr("GOT HERE")
+--        DSH:CreateSlotButton("Bags")
+--        local slotBtn = DSH.slotButtons["Bags"]
+--        slotBtn:SetNormalTexture(133633)
+--        slotBtn.qualityTex:Hide()
+--        slotBtn.position = buttonCount
+--        --slotBtn:SetAtlas("bag-main")
+--        if buttonCount > 1 then
+--            slotBtn:SetPoint("LEFT", DSH.slotButtons[buttonCount-1],"RIGHT", SLOT_BUTTON_PAD, 0)
+--        else
+--            slotBtn:SetPoint("LEFT", DSH.SBC, "RIGHT", SLOT_BUTTON_PAD, 0)
+--        end
         
-        --remixBagButtonShown = true
-        slotBtn:SetText(#DSH.socketedItemsInBags)
-        slotBtn:Show()
+--        --remixBagButtonShown = true
+--        slotBtn:SetText(#DSH.socketedItemsInBags)
+--        slotBtn:Show()
 
-        if DSH.SBC.bagSlotExtended then
-            bagSlotButtonEnter(slotBtn, true)
-        end
-    end
+--        if DSH.SBC.bagSlotExtended then
+--            bagSlotButtonEnter(slotBtn, true)
+--        end
+--    end
 
-end
+--end
+
+local allowClickPrismatic = true
+
+
+--local function delayPrismaticButtons()
+
+--    for _, btn in pairs(PC.PrismaticButtons) do
+--        btn:SetEnabled(false)
+--    end
+
+--    C_Timer.After(1, function() 
+--        for _, btn in pairs(PC.PrismaticButtons) do
+--            btn:SetEnabled(true)
+--        end
+    
+--    end)
+
+
+--end
+
+
+local ignoreGemSlot = {}
 
 
 
@@ -464,13 +486,32 @@ local function createPrismaticButton(statNum, btnTable, stat, statBtnNum)
     else
         btnTable[btnName] = CreateFrame("Button", nil, DSH.SBC.RemixButtons.backdrop.PC, "UIPanelButtonTemplate")
         btnTable[btnName]:SetScript("OnClick", function(self, button, down)
+            --if not allowClickPrismatic then return end
+
+            local gemID, slotNum, socketNum = self.gemID, self.slotNum, self.socketNum
+
+            if ignoreGemSlot[slotNum] and ignoreGemSlot[slotNum][socketNum] then dbpr("UH OH") return end
+
             if down and self.gemID and self.slotNum and self.socketNum then
                 SocketInventoryItem(self.slotNum)
 
                 --exit in case the code is f'ed
                 if GetExistingSocketLink(self.socketNum) then return end
 
+                local itemLink = GetInventoryItemLink("player", self.slotNum)
+
+                allowClickPrismatic = false
+                --C_Timer.After(0.5, function() allowClickPrismatic = true end)
+
+                --delayPrismaticButtons()
+
                 DSH:UseContainerItemByID(self.gemID, self.socketNum)
+
+                ignoreGemSlot[slotNum] = ignoreGemSlot[slotNum] or {}
+                ignoreGemSlot[slotNum][self.socketNum] = true
+
+                C_Timer.After(3, function() ignoreGemSlot[slotNum][socketNum] = false end)
+
                 AcceptSockets()
                 CloseSocketInfo()
             end
@@ -633,6 +674,11 @@ end
 local function hideBagButtons()
     if not DSH.SBC.RemixButtons.BagButtons then return end
     for _, btn in pairs(DSH.SBC.RemixButtons.BagButtons) do
+        btn.nextGemID = nil
+        btn.gemType = nil
+        btn.nextGemSlot = nil
+        btn.slotNum = nil
+        btn.socketNum = nil
         btn:Hide()
     end
 end
@@ -646,7 +692,8 @@ local function createBagButton(i)
     local frame = CreateFrame("Button", nil, DSH.SBC.RemixButtons.backdrop, "SecureActionButtonTemplate")
     frame:SetNormalTexture(133633)
     frame:RegisterForClicks("AnyUp", "AnyDown")
-    frame:SetAttribute("type", "macro")
+    frame:SetAttribute("type1", "macro")
+    frame:SetAttribute("type2", "macro")
     frame:SetSize(15,15)
     if i == 1 then
         frame:SetPoint("TOPLEFT", DSH.SBC.RemixButtons.backdrop, "TOPRIGHT", 2, 0)
@@ -654,11 +701,43 @@ local function createBagButton(i)
         frame:SetPoint("TOPLEFT", DSH.SBC.RemixButtons.BagButtons[i-1], "BOTTOMLEFT", 0, -2)
     end
 
+    frame:SetScript("PostClick", function(self, button, down)
+        if down and button == "RightButton" then
+            --quick and dirty, with timers.
+            C_Timer.After(0.1, function() self:SetEnabled(false) end)
+            local slotNum, socketNum, gemID = self.slotNum, self.socketNum, self.nextGemID
+            --dbpr("B4 Timer", slotNum, socketNum, gemID)
+            --local btn = self
+            C_Timer.After(1, function()
+                C_Timer.After(0.5, function() self:SetEnabled(true) end)
+                if gemID then
+
+                    --dbpr("AFTER TIMER", slotNum, socketNum, gemID)
+
+                    SocketInventoryItem(slotNum)
+
+                    --exit in case the code is f'ed
+                    if GetExistingSocketLink(socketNum) then return end
+
+                    --dbpr("DIDNT EXIT", gemID, socketNum)
+
+                    DSH:UseContainerItemByID(gemID, socketNum)
+                    AcceptSockets()
+                    CloseSocketInfo()
+                end
+            end)
+        end
+    end)
+
     frame:SetScript("OnEnter", function(self)
         DSH:ToggleItemTooltip(true, self)
+ 
+
+        DSH:ToggleInfoTooltip(true, L["LCLICK_REMOVE"] .. (self.slotNum and L["RCLICK_TRANSFER"] or "") , self)
     end)
     frame:SetScript("OnLeave", function(self)
         DSH:ToggleItemTooltip(false)
+        DSH:ToggleInfoTooltip(false)
     end)
 
     DSH.SBC.RemixButtons.BagButtons[i] = frame
@@ -669,19 +748,18 @@ end
 
 local function updateBagButtons()
     --DSH.socketedItemsInBags = {}
-    dbpr("REDO BAGS")
-
-    local castName = GetSpellInfo(433397)
+    --dbpr("REDO BAGS")
 
     hideBagButtons()
 
+    local castName = GetSpellInfo(433397)
     local socketedItemsInBags = getSocketedItemsInBags()
-
     local bagCount = 1
+    local slotNum, socketNum = getNextEmptySlot(DSH.CurrentRemixWindow)
 
     for _, socketedBagItemInfo in pairs(socketedItemsInBags) do
 
-        dbpr(socketedBagItemInfo.gemType, DSH.CurrentRemixWindow)
+        --dbpr(socketedBagItemInfo.gemType, DSH.CurrentRemixWindow)
 
         if socketedBagItemInfo.gemType == DSH.CurrentRemixWindow then
 
@@ -691,7 +769,7 @@ local function updateBagButtons()
             btn.itemLink = socketedBagItemInfo.itemLink
             btn:SetNormalTexture(socketedBagItemInfo.icon)
 
-            btn:SetAttribute("macrotext", "/cast "..castName..
+            btn:SetAttribute("macrotext1", "/cast "..castName..
                                         "\n/script C_Container.SocketContainerItem("..socketedBagItemInfo.bag..", "..socketedBagItemInfo.slot..")"..
                                         "\n/click ItemSocketingSocket1"..
                                         "\n/cast "..castName..
@@ -699,6 +777,27 @@ local function updateBagButtons()
                                         "\n/cast "..castName..
                                         "\n/click ItemSocketingSocket3"..
                                         "\n/script HideUIPanel(ItemSocketingFrame)")
+
+
+            if slotNum and socketNum then
+                for i, gemID in ipairs(socketedBagItemInfo.gemIDs) do
+                    if gemID and not btn.nextGemID then
+                        btn.nextGemSlot = i
+                        btn.nextGemID = gemID
+                        btn.gemType = socketedBagItemInfo.gemType
+                    end
+                end
+
+                btn.slotNum = slotNum
+                btn.socketNum = socketNum
+
+                btn:SetAttribute("macrotext2", "/cast "..castName..
+                                            "\n/script C_Container.SocketContainerItem("..socketedBagItemInfo.bag..", "..socketedBagItemInfo.slot..")"..
+                                            "\n/click ItemSocketingSocket"..btn.nextGemSlot..
+                                            "\n/script HideUIPanel(ItemSocketingFrame)")
+            else
+                btn:SetAttribute("macrotext2", "")
+            end
 
             btn:Show()
 
@@ -736,14 +835,6 @@ local function createSecureRemoveButton(i)
             btn:SetPoint("TOPLEFT", DSH.SBC.RemixButtons.backdrop.OC.SecureButtons[i-1], "TOPRIGHT", BUTTON_PAD, 0)
         end
     end
-
-    --if (not tex.SetBackdrop) then Mixin(tex, BackdropTemplateMixin) end
-    --tex.backdrop = {
-    --    edgeFile = "Interface\\Buttons\\WHITE8x8",
-    --    tileEdge = true,
-    --    edgeSize = 20,
-    --    insets = {left = 1, right = 1, top = 1, bottom = 1},
-    --}
 
     btn:SetScript("OnEnter", function(self)
         DSH:ToggleItemTooltip(true, self)

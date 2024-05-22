@@ -151,14 +151,14 @@ function EF:ADDON_LOADED(addon)
 
 		--GameTooltip:HookScript("OnTooltipSetItem", function() DSH:ItemToolTip() end);
 
-		local name, _ = UnitName("player")
-		if name and name == "Zariuh" then
-			DSH.debug = true
-		end
+		--local name, _ = UnitName("player")
+		--if name and name == "Zariuh" then
+		--	DSH.debug = true
+		--end
 
-        if name and name == "Metrisstest" then
-			DSH.debug = true
-		end
+        --if name and name == "Metrisstest" then
+		--	DSH.debug = true
+		--end
 		
 		DSH.gemButtons = {}
 		DSH.slotButtons = {}
@@ -803,7 +803,7 @@ function DSH:IsRemix()
     DSH.remixChecked = true
 
     AuraUtil.ForEachAura("player", "HELPFUL", nil, function(name, icon, _, _, _, _, _, _, _, spellId)
-        if spellId == 424143 then -- Power Word: Fortitude
+        if spellId == 424143 then
             DSH.isRemix = true
             DSH.remixGemType = {}
             --DSH.remixGemSearch = {PRISMATIC_GEM}

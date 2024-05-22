@@ -26,6 +26,9 @@ L["REPLACE"] = "Replace %s with %s in:"
 L["REPLACE_TIP"] = "|cFFFC0316Shift|r: Replace All"
 L["NOT_ENOUGH_GEMS"] = "|cFFFC0316Purchase %sx%s to also include:" --example: Missing [item Link]x3
 
+L["LCLICK_REMOVE"] = "   |cFFFC0316Left-Click|r: Remove"
+L["RCLICK_TRANSFER"] = "\n   |cFFFC0316Right-Click|r: Remove & Resocket"
+
 --Below goes on shard buttons.
 --ItemID of base item provided if translation is needed
 L["Bek"] = "Bek" --187057
