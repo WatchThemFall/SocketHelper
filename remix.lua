@@ -256,7 +256,9 @@ local function createPrismaticStrings()
     text = text:sub(1, -1)
 
     PC.StatNames = createPrismaticString(text, "TOPLEFT", DSH.SBC.RemixButtons.backdrop, "TOPLEFT", 5, -5, nil, nil, "LEFT")
-    
+    PC.StatNames.height = PC.StatNames:GetStringHeight();
+    PC.StatNames.lineHeight = PC.StatNames.height / 9
+
     PC.StatBag = {}
 
     PC.StatBag[1] = createPrismaticString("1" , "TOPLEFT", PC.StatNames, "TOPRIGHT", 5, 0, STAT_COLUMN_WIDTH, PC.StatNames:GetHeight(), "CENTER")
@@ -472,10 +474,8 @@ local allowClickPrismatic = true
 
 --end
 
-
+local PRISMATIC_BUTTONS_SIZE = 12.5
 local ignoreGemSlot = {}
-
-
 
 local function createPrismaticButton(statNum, btnTable, stat, statBtnNum)
     local btnName = stat..statBtnNum
@@ -486,29 +486,25 @@ local function createPrismaticButton(statNum, btnTable, stat, statBtnNum)
     else
         btnTable[btnName] = CreateFrame("Button", nil, DSH.SBC.RemixButtons.backdrop.PC, "UIPanelButtonTemplate")
         btnTable[btnName]:SetScript("OnClick", function(self, button, down)
-            --if not allowClickPrismatic then return end
 
             local gemID, slotNum, socketNum = self.gemID, self.slotNum, self.socketNum
 
             if ignoreGemSlot[slotNum] and ignoreGemSlot[slotNum][socketNum] then dbpr("UH OH") return end
 
-            if down and self.gemID and self.slotNum and self.socketNum then
-                SocketInventoryItem(self.slotNum)
+            if down and gemID and slotNum and socketNum then
+                SocketInventoryItem(slotNum)
 
-                --exit in case the code is f'ed
-                if GetExistingSocketLink(self.socketNum) then return end
+                --exit in case the code is f'ed (Doesn't actually work? thx blizzard)
+                if GetExistingSocketLink(socketNum) then return end
 
-                local itemLink = GetInventoryItemLink("player", self.slotNum)
-
-                allowClickPrismatic = false
-                --C_Timer.After(0.5, function() allowClickPrismatic = true end)
+                --local itemLink = GetInventoryItemLink("player", slotNum)
 
                 --delayPrismaticButtons()
 
-                DSH:UseContainerItemByID(self.gemID, self.socketNum)
+                DSH:UseContainerItemByID(gemID, socketNum)
 
                 ignoreGemSlot[slotNum] = ignoreGemSlot[slotNum] or {}
-                ignoreGemSlot[slotNum][self.socketNum] = true
+                ignoreGemSlot[slotNum][socketNum] = true
 
                 C_Timer.After(3, function() ignoreGemSlot[slotNum][socketNum] = false end)
 
@@ -528,20 +524,27 @@ local function createPrismaticButton(statNum, btnTable, stat, statBtnNum)
     frame.stat = stat
     frame.statBtnNum = statBtnNum
 
+    --local yOff = -1 * ((DSH.SBC.RemixButtons.backdrop.PC.StatNames.height/9) - PRISMATIC_BUTTONS_SIZE)
+
     if statNum == 1 and statBtnNum == 1 then
         --dbpr(statNum, statBtnNum)
         local xOff = DSH.SBC.RemixButtons.backdrop.PC.StatBag[4]:GetRight() - DSH.SBC.RemixButtons.backdrop:GetLeft()
         --dbpr(xOff)
+
+        local yOff = -1 * (DSH.SBC.RemixButtons.backdrop.PC.StatNames.lineHeight * 1.4)
+
     
         --frame:ClearAllPoints()
-        frame:SetPoint("TOPLEFT", DSH.SBC.RemixButtons.backdrop, "TOPLEFT", xOff, -19)
+        frame:SetPoint("TOPLEFT", DSH.SBC.RemixButtons.backdrop, "TOPLEFT", xOff, yOff)
     elseif statBtnNum == 2 then
         frame:SetPoint("LEFT", btnTable[stat.."1"], "RIGHT", 2, 0)
     else
-        frame:SetPoint("TOPLEFT", btnTable[STAT_ORDER[statNum-1].."1"], "BOTTOMLEFT", 0, -2)
+        local yOff = -1 * (DSH.SBC.RemixButtons.backdrop.PC.StatNames.lineHeight - PRISMATIC_BUTTONS_SIZE + 0.15)
+
+        frame:SetPoint("TOPLEFT", btnTable[STAT_ORDER[statNum-1].."1"], "BOTTOMLEFT", 0, yOff)
     end
 
-    frame:SetSize(12.5, 12.5)
+    frame:SetSize(PRISMATIC_BUTTONS_SIZE, PRISMATIC_BUTTONS_SIZE)
 
     --frame:SetScript("OnEnter", function()
 
@@ -564,6 +567,10 @@ local function createPrismaticButtons()
     --PC.PrismaticButtonsContainer:SetPoint("LEFT", DSH.SBC.RemixButtons.backdrop.PC.StatBag[4], "LEFT")
 
     PC.PrismaticButtons = {}
+
+    --local lineHeight = DSH.SBC.RemixButtons.backdrop.PC.StatNames.height/9
+    --local yOff = -1 * (lineHeight - PRISMATIC_BUTTONS_SIZE)
+
 
     for statNum, stat in pairs(STAT_ORDER) do
         createPrismaticButton(statNum, PC.PrismaticButtons, stat, 1)

@@ -159,7 +159,11 @@ function EF:ADDON_LOADED(addon)
         --if name and name == "Metrisstest" then
 		--	DSH.debug = true
 		--end
-		
+
+        --if DSH.VERSION == "@project-version@" then
+        --    DSH.debug = true
+        --end
+
 		DSH.gemButtons = {}
 		DSH.slotButtons = {}
         DSH.uniqueInfo = {}
