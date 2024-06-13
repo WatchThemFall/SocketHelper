@@ -26,7 +26,7 @@ local BUTTON_SIZE = 25
 local SLOT_GEM_WRAP = 6
 local BUTTON_PAD = 2
 local STAT_ORDER = {CRIT_ABBR, STAT_HASTE, STAT_MASTERY, STAT_VERSATILITY, STAT_ARMOR, MANA_REGEN_ABBR, STAT_LIFESTEAL, STAT_SPEED}
-
+local STAT_COLUMN_WIDTH = 17
 
 local META_GEM_INFO = {
     [221982] = true,
@@ -238,8 +238,6 @@ local function getPrismaticInBags()
 
 end
 
-local STAT_COLUMN_WIDTH = 15
-
 local function createPrismaticStrings()
 
     local PC = DSH.SBC.RemixButtons.backdrop.PC
@@ -262,6 +260,15 @@ local function createPrismaticStrings()
     PC.StatBag = {}
 
     PC.StatBag[1] = createPrismaticString("1" , "TOPLEFT", PC.StatNames, "TOPRIGHT", 5, 0, STAT_COLUMN_WIDTH, PC.StatNames:GetHeight(), "CENTER")
+
+    --quick hack to fix column width depending on font size (Elvui changes size?)
+    PC.StatBag[1]:SetText("88")
+    STAT_COLUMN_WIDTH = PC.StatBag[1]:GetStringWidth() + 2
+    --STAT_COLUMN_WIDTH = width
+    PC.StatBag[1]:SetWidth(STAT_COLUMN_WIDTH)
+
+    --dbpr(width)
+    
     PC.StatBag[2] = createPrismaticString("2" , "TOPLEFT", PC.StatBag[1], "TOPRIGHT", 5, 0, STAT_COLUMN_WIDTH, PC.StatNames:GetHeight(), "CENTER")
     PC.StatBag[3] = createPrismaticString("3" , "TOPLEFT", PC.StatBag[2], "TOPRIGHT", 5, 0, STAT_COLUMN_WIDTH, PC.StatNames:GetHeight(), "CENTER")
     PC.StatBag[4] = createPrismaticString("4" , "TOPLEFT", PC.StatBag[3], "TOPRIGHT", 5, 0, STAT_COLUMN_WIDTH, PC.StatNames:GetHeight(), "CENTER")
