@@ -160,9 +160,9 @@ function EF:ADDON_LOADED(addon)
 		--	DSH.debug = true
 		--end
 
-        if DSH.VERSION == "@project-version@" then
-            DSH.debug = true
-        end
+        --if DSH.VERSION == "@project-version@" then
+        --    DSH.debug = true
+        --end
 
 		DSH.gemButtons = {}
 		DSH.slotButtons = {}
