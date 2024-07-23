@@ -151,14 +151,14 @@ function EF:ADDON_LOADED(addon)
 
 		--GameTooltip:HookScript("OnTooltipSetItem", function() DSH:ItemToolTip() end);
 
-		--local name, _ = UnitName("player")
+		local name, _ = UnitName("player")
 		--if name and name == "Zariuh" then
 		--	DSH.debug = true
 		--end
 
-        --if name and name == "Metrisstest" then
-		--	DSH.debug = true
-		--end
+        if name and name == "Metris" then
+			DSH.debug = true
+		end
 
         --if DSH.VERSION == "@project-version@" then
         --    DSH.debug = true
@@ -918,8 +918,10 @@ local function slotExtendClick(frame, clickType)
 		frame:SetText(DSH.db.char.quickslots.extended and "<" or ">")
 		DSH:UpdateSlotButtons()
 	else
-		InterfaceOptionsFrame_OpenToCategory(GetAddOnMetadata(addonName, "Title"))
-		InterfaceOptionsFrame_OpenToCategory(GetAddOnMetadata(addonName, "Title"))
+		--InterfaceOptionsFrame_OpenToCategory(GetAddOnMetadata(addonName, "Title"))
+		--InterfaceOptionsFrame_OpenToCategory(GetAddOnMetadata(addonName, "Title"))
+        Settings.OpenToCategory(GetAddOnMetadata(addonName, "Title"))
+        Settings.OpenToCategory(GetAddOnMetadata(addonName, "Title"))
 	end
 end
 
@@ -997,8 +999,14 @@ function DSH:CreateSlotButton(i)
 	--slot button container
 	--DSH.SBC = DSH.SBC or createSlotButtonContainer()
 
-	DSH.slotButtons[i] = CreateFrame ("button", "DSH_SlotBtn_"..i, DSH.SBC, "AutoCastShineTemplate")
-	
+	DSH.slotButtons[i] = CreateFrame ("button", "DSH_SlotBtn_"..i, DSH.SBC, "AutoCastOverlayTemplate")
+	--dbpr(DSH.slotButtons[i].Shine)
+
+    --for k, v in pairs(DSH.slotButtons[i]) do
+    --    dbpr(k, v)
+    --end
+    --dbpr("-------------------")
+
 	local frame = DSH.slotButtons[i]
 
     if type(i) == "number" then
@@ -1018,6 +1026,24 @@ function DSH:CreateSlotButton(i)
 
 	frame:SetWidth(SLOT_BUTTON_SIZE)
 	frame:SetHeight(SLOT_BUTTON_SIZE)
+
+    --frame.AutoCastOverlay = CreateFrame ("button", "", frame, "AutoCastOverlayTemplate")
+    --frame.AutoCastOverlay:SetAllPoints()
+    --frame.AutoCastOverlay.Corners:Hide()
+
+    --for k, v in pairs(frame.AutoCastOverlay) do
+    
+    --    dbpr(k, v)
+    --end
+
+    --frame.Shine:ClearAllPoints()
+    --frame.Shine:SetPoint("CENTER", frame, "CENTER")
+    --frame.Shine:SetAllPoints()
+    --frame.Shine:SetAllPoints()
+    --frame.Shine:SetSize(20, 20)
+
+    frame.Corners:SetDrawLayer("OVERLAY")
+    frame.Corners:Hide()
 	
 	frame:SetNormalFontObject("GameFontNormal")
 	
@@ -1037,33 +1063,13 @@ function DSH:CreateSlotButton(i)
 
 end
 
---function DSH:UpdateCurSlotGlow(btnTable, force)
---	--hide the old glow, just brute forcing this because many problems with unextended + always show empty 
---	for i = 1, MAX_SLOT do
---		ActionButton_HideOverlayGlow(_G["Character"..slotNames[i].."Slot"])
---		if DSH.slotButtons[i] then
---			AutoCastShine_AutoCastStop(DSH.slotButtons[i])
---		end
---	end
-	
---	if not btnTable then return end
-	
---    if (not DSH.GBC or DSH.GBC.isSlotContainer or force) then
---        for k, btn in pairs(btnTable) do
---            if btn and btn.slot then
---                --dbpr("Glow", "Character"..slotNames[btn.slot].."Slot")
---                ActionButton_ShowOverlayGlow(_G["Character"..slotNames[btn.slot].."Slot"])
---                -- LG.PixelGlow_Start(btn)
---                AutoCastShine_AutoCastStart(btn)
---            end
---        end
---    end
---end
 
 function DSH:UpdateCurSlotGlow(btnTable, force)
 
     for _, btn in pairs(DSH.slotButtons) do
-        AutoCastShine_AutoCastStop(btn)
+        --AutoCastOverlay_AutoCastStop(btn)
+        btn:ShowAutoCastEnabled(false)
+        btn.Corners:Hide()
     end
 	
     local glowSlots = {}
@@ -1075,7 +1081,9 @@ function DSH:UpdateCurSlotGlow(btnTable, force)
                     if not btn.bag then
                         ActionButton_ShowOverlayGlow(_G["Character"..slotNames[btn.slot].."Slot"])
                     end
-                    AutoCastShine_AutoCastStart(btn)
+                    --AutoCastOverlay_AutoCastStart(btn)
+                    btn:ShowAutoCastEnabled(true)
+                    btn.Corners:Show()
                     glowSlots[btn.slot] = true
                 end
             end
