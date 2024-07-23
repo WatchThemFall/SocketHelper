@@ -151,14 +151,14 @@ function EF:ADDON_LOADED(addon)
 
 		--GameTooltip:HookScript("OnTooltipSetItem", function() DSH:ItemToolTip() end);
 
-		local name, _ = UnitName("player")
+		--local name, _ = UnitName("player")
 		--if name and name == "Zariuh" then
 		--	DSH.debug = true
 		--end
 
-        if name and name == "Metris" then
-			DSH.debug = true
-		end
+        --if name and name == "Metris" then
+		--	DSH.debug = true
+		--end
 
         --if DSH.VERSION == "@project-version@" then
         --    DSH.debug = true
