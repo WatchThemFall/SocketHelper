@@ -8,6 +8,8 @@ if (not L) then
 	return
 end
 
+local GetAddOnMetadata = GetAddOnMetadata or C_AddOns.GetAddOnMetadata
+
 DSH.TITLE = GetAddOnMetadata(addonName, "Title")
 DSH.VERSION = GetAddOnMetadata(addonName, "Version")
 DSH.AUTHOR = GetAddOnMetadata(addonName, "Author")
@@ -15,7 +17,7 @@ DSH.AUTHOR = GetAddOnMetadata(addonName, "Author")
 local GetItemGem = GetItemGem
 local GetSocketItemInfo = GetSocketItemInfo
 local GetInventoryItemLink = GetInventoryItemLink
-local GetItemInfoInstant = GetItemInfoInstant
+local GetItemInfoInstant = GetItemInfoInstant or C_Item.GetItemInfoInstant
 --local GetContainerItemLink = C_Container.GetContainerItemLink
 --local PickupContainerItem = C_Container.PickupContainerItem
 --local GetContainerNumSlots = C_Container.GetContainerNumSlots
@@ -29,6 +31,9 @@ local SocketContainerItem = C_Container.SocketContainerItem
 local GetContainerItemInfo = C_Container.GetContainerItemInfo
 local SocketInventoryItem = SocketInventoryItem
 local GetExistingSocketLink = GetExistingSocketLink
+local GetItemIcon = GetItemIcon or C_Item.GetItemIconByID
+local GetItemCount = GetItemCount or C_Item.GetItemCount
+local GetItemInfo = GetItemInfo or C_Item.GetItemInfo
 
 local UNIQUE_EQUIP_PATTERN = _G.ITEM_LIMIT_CATEGORY_MULTIPLE:gsub("%(%%d%)", "%%(%%d%%)"):gsub("%-", "%%-"):gsub('%%s', '(.+)')
 

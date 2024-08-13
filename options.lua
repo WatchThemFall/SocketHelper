@@ -8,7 +8,7 @@ if (not L) then
 	return
 end
 
-local ADDON_TITLE = GetAddOnMetadata(addonName, "Title")
+local ADDON_TITLE = DSH.TITLE --GetAddOnMetadata(addonName, "Title")
 local config = LibStub("AceConfig-3.0")
 local dialog = LibStub("AceConfigDialog-3.0")
 

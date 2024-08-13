@@ -28,6 +28,9 @@ local BUTTON_PAD = 2
 local STAT_ORDER = {CRIT_ABBR, STAT_HASTE, STAT_MASTERY, STAT_VERSATILITY, STAT_ARMOR, MANA_REGEN_ABBR, STAT_LIFESTEAL, STAT_SPEED}
 local STAT_COLUMN_WIDTH = 17
 
+local GetItemInfoInstant = GetItemInfoInstant or C_Item.GetItemInfoInstant
+local GetItemCount = GetItemCount or C_Item.GetItemCount
+
 local META_GEM_INFO = {
     [221982] = true,
     [221977] = true,
