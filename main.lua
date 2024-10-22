@@ -92,33 +92,50 @@ local PRIMORDIAL_GEMS = {
 }
 
 local TINKERS = {
-    [198298] = true,
+    [198298] = true, --Plane Displacer
     [198299] = true,
     [198300] = true,
+    [225242] = true, --Refurbished
 
-    [198289] = true,
+    [198289] = true, --Alarm-O-Turret
     [198290] = true,
     [198291] = true,
+    [225241] = true, --Refurbished
 
-    [201407] = true,
+    [201407] = true, --Arclight Vital Correctors
     [201408] = true,
     [201409] = true,
 
-    [199188] = true,
+    [199188] = true, --Polarity Amplifier
     [199189] = true,
     [199190] = true,
 
-    [198301] = true,
+    [198301] = true, --Supercollide-O-Tron
     [198302] = true,
     [198303] = true,
+    [225243] = true, --Refurbished
 
-    [198295] = true,
+    [205014] = true, --Shadowflame Rockets
+    [205015] = true,
+    [205016] = true,
+    [225244] = true, --Refurbished
+
+    [198295] = true, --Breath of Neltharion
     [198296] = true,
     [198297] = true,
 
-    [198304] = true,
+    [198304] = true, --Grounded Circuitry
     [198305] = true,
     [198306] = true,
+
+    --TWW Tinkers--
+    [221904] = true, --Earthen Delivery Drill
+    [221905] = true,
+    [221906] = true,
+
+    [221908] = true, --Heartseeking Health Injector
+    [221909] = true,
+    [221910] = true,
 }
 
 --Name must be what GetSocketTypes(n) returns! 
