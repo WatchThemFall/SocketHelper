@@ -34,12 +34,15 @@ local GetExistingSocketLink = GetExistingSocketLink
 local GetItemIcon = GetItemIcon or C_Item.GetItemIconByID
 local GetItemCount = GetItemCount or C_Item.GetItemCount
 local GetItemInfo = GetItemInfo or C_Item.GetItemInfo
+local GetNumSockets = GetNumSockets
+--local GetSocketInfo = GetSocketInfo
+local GetSocketTypes = GetSocketTypes
 
 local UNIQUE_EQUIP_PATTERN = _G.ITEM_LIMIT_CATEGORY_MULTIPLE:gsub("%(%%d%)", "%%(%%d%%)"):gsub("%-", "%%-"):gsub('%%s', '(.+)')
 
 local NUM_BAG_SLOTS = NUM_BAG_SLOTS
 
-local pairs, next, select, type, unpack = pairs, next, select, type, unpack
+local pairs, next, select, type, unpack, ipairs, table, tContains = pairs, next, select, type, unpack, ipairs, table, tContains
 local format, tostring, tonumber = string.format, tostring, tonumber
 
 local SLOT_GEM_WRAP = 6
@@ -63,89 +66,121 @@ local function DSHPrint(text)
 	print("|cFFFC0316DSH: |r" .. text)
 end
 
-local PRIMORDIAL_GEMS = {
-    [204012] = true,
-    [204010] = true,
-    [204027] = true,
-    [204001] = true,
-    [204005] = true,
-    [204013] = true,
-    [204002] = true,
-    [204011] = true,
-    [204009] = true,
-    [204019] = true,
-    [204018] = true,
-    [204006] = true,
-    [204021] = true,
-    [204025] = true,
-    [204022] = true,
-    [204008] = true,
-    [204029] = true,
-    [204003] = true,
-    [204004] = true,
-    [204007] = true,
-    [204014] = true,
-    [204000] = true,
-    [204015] = true,
-    [204020] = true,
-    [204030] = true,
-}
+--Format: [gem ID] = "GetSocketTypes(n)"
+local GEM_TYPES_SPECIAL = {
+    [204012] = "Primordial",
+    [204010] = "Primordial",
+    [204027] = "Primordial",
+    [204001] = "Primordial",
+    [204005] = "Primordial",
+    [204013] = "Primordial",
+    [204002] = "Primordial",
+    [204011] = "Primordial",
+    [204009] = "Primordial",
+    [204019] = "Primordial",
+    [204018] = "Primordial",
+    [204006] = "Primordial",
+    [204021] = "Primordial",
+    [204025] = "Primordial",
+    [204022] = "Primordial",
+    [204008] = "Primordial",
+    [204029] = "Primordial",
+    [204003] = "Primordial",
+    [204004] = "Primordial",
+    [204007] = "Primordial",
+    [204014] = "Primordial",
+    [204000] = "Primordial",
+    [204015] = "Primordial",
+    [204020] = "Primordial",
+    [204030] = "Primordial",
 
-local TINKERS = {
-    [198298] = true, --Plane Displacer
-    [198299] = true,
-    [198300] = true,
-    [225242] = true, --Refurbished
+    [198298] = "Tinker", --Plane Displacer
+    [198299] = "Tinker",
+    [198300] = "Tinker",
+    [225242] = "Tinker", --Refurbished
 
-    [198289] = true, --Alarm-O-Turret
-    [198290] = true,
-    [198291] = true,
-    [225241] = true, --Refurbished
+    [198289] = "Tinker", --Alarm-O-Turret
+    [198290] = "Tinker",
+    [198291] = "Tinker",
+    [225241] = "Tinker", --Refurbished
 
-    [201407] = true, --Arclight Vital Correctors
-    [201408] = true,
-    [201409] = true,
+    [201407] = "Tinker", --Arclight Vital Correctors
+    [201408] = "Tinker",
+    [201409] = "Tinker",
 
-    [199188] = true, --Polarity Amplifier
-    [199189] = true,
-    [199190] = true,
+    [199188] = "Tinker", --Polarity Amplifier
+    [199189] = "Tinker",
+    [199190] = "Tinker",
 
-    [198301] = true, --Supercollide-O-Tron
-    [198302] = true,
-    [198303] = true,
-    [225243] = true, --Refurbished
+    [198301] = "Tinker", --Supercollide-O-Tron
+    [198302] = "Tinker",
+    [198303] = "Tinker",
+    [225243] = "Tinker", --Refurbished
 
-    [205014] = true, --Shadowflame Rockets
-    [205015] = true,
-    [205016] = true,
-    [225244] = true, --Refurbished
+    [205014] = "Tinker", --Shadowflame Rockets
+    [205015] = "Tinker",
+    [205016] = "Tinker",
+    [225244] = "Tinker", --Refurbished
 
-    [198295] = true, --Breath of Neltharion
-    [198296] = true,
-    [198297] = true,
+    [198295] = "Tinker", --Breath of Neltharion
+    [198296] = "Tinker",
+    [198297] = "Tinker",
 
-    [198304] = true, --Grounded Circuitry
-    [198305] = true,
-    [198306] = true,
+    [198304] = "Tinker", --Grounded Circuitry
+    [198305] = "Tinker",
+    [198306] = "Tinker",
 
     --TWW Tinkers--
-    [221904] = true, --Earthen Delivery Drill
-    [221905] = true,
-    [221906] = true,
+    [221904] = "Tinker", --Earthen Delivery Drill
+    [221905] = "Tinker",
+    [221906] = "Tinker",
 
-    [221908] = true, --Heartseeking Health Injector
-    [221909] = true,
-    [221910] = true,
+    [221908] = "Tinker", --Heartseeking Health Injector
+    [221909] = "Tinker",
+    [221910] = "Tinker",
+
+    [228642] = "SingingThunder",
+    [228648] = "SingingThunder", 
+    [228638] = "SingingThunder",
+    [228634] = "SingingThunder",
+
+    [228644] = "SingingSea",
+    [228647] = "SingingSea", 
+    [228639] = "SingingSea",
+    [228636] = "SingingSea",
+    
+    [228643] = "SingingWind",
+    [228646] = "SingingWind", 
+    [228640] = "SingingWind",
+    [228635] = "SingingWind",
+
 }
 
---Name must be what GetSocketTypes(n) returns! 
-local SLOT_INFO = {
-    [EMPTY_SOCKET_PRIMORDIAL] = {Icon = 4095404, Name = "Primordial"},
-    [EMPTY_SOCKET_PRISMATIC] = {Icon = 458977, Name = "Prismatic"},
-    [EMPTY_SOCKET_TINKER] = {Icon = 2958630, Name = "Tinker"},
-    [EMPTY_SOCKET_COGWHEEL] = {Icon = 407324, Name = "Cogwheel"},
-    [EMPTY_SOCKET_META] = {Icon = 136257, Name = "Meta"},
+local SINGING_SOCKET = {
+    ["SingingThunder"] = true,
+    ["SingingWind"] = true,
+    ["SingingSea"] = true,
 }
+
+--slotName = locale string for socket text
+--Name = what GetSocketTypes(n) returns
+--This is the order that the gem slots under the character frame show up in
+local SLOT_INFO_ORDERED = {
+    {Name = "Meta", Icon = 136257, slotName = EMPTY_SOCKET_META},
+    {Name = "Prismatic", Icon = 458977, slotName = EMPTY_SOCKET_PRISMATIC},
+    {Name = "Tinker", Icon = 2958630, slotName = EMPTY_SOCKET_TINKER},
+    {Name = "Cogwheel", Icon = 407324, slotName = EMPTY_SOCKET_COGWHEEL},
+    {Name = "Primordial", Icon = 4095404, slotName = EMPTY_SOCKET_PRIMORDIAL},
+    {Name = "SingingThunder", Icon = 136259, slotName = EMPTY_SOCKET_SINGINGTHUNDER},
+    {Name = "SingingSea", Icon = 136256, slotName = EMPTY_SOCKET_SINGINGSEA},
+    {Name = "SingingWind", Icon = 136258, slotName = EMPTY_SOCKET_SINGINGWIND},
+}
+
+--creating an additional dictionary to quickly check if items have gem slots from tooltip scans.
+local SLOT_INFO = {}
+for i, slotInfo in pairs(SLOT_INFO_ORDERED) do
+    SLOT_INFO[slotInfo.slotName] = slotInfo
+end
 
 local function dbpr(...)
 	if not DSH.debug then return end
@@ -192,6 +227,8 @@ function EF:ADDON_LOADED(addon)
         DSH.UniqueEquipped = {}
     end
 end
+
+
 
 --used to get frame info which is the same in all localizations?
 local slotNames = {"Head", "Neck", "Shoulder", "Shirt", "Chest",
@@ -276,29 +313,48 @@ local function createGemButtonContainer()
     DSH.GBC = frame
 end
 
-local function isPrimordialGem(gemID)
-    if PRIMORDIAL_GEMS[gemID] then return true end
-end
+--local function isPrimordialGem(gemID)
+--    if PRIMORDIAL_GEMS[gemID] then return true end
+--end
 
-local function isTinkerGem(gemID)
-    if TINKERS[gemID] then return true end
-end
+--local function isTinkerGem(gemID)
+--    if TINKERS[gemID] then return true end
+--end
 
 local function socketingItemIsMultiSocket()
     if ItemSocketingSocket2 and ItemSocketingSocket2:IsShown() then return true end
 end
 
-local function getCurrentSocketingType(isSlotButton)
+local function getCurrentSocketingTypes(isSlotButton)
     
     if isSlotButton and DSH.SBC.curSlotBtn then
-        return DSH.SBC.curSlotBtn.slotType 
+        return {DSH.SBC.curSlotBtn.slotType} 
     end
     
-    local socketType = GetSocketTypes(1)
-    if socketType then return socketType end
+    local socketTypes = {}
+
+    if SINGING_SOCKET[GetSocketTypes(1)] then
+        --if it's a singing socket don't show gems for sockets that are filled
+        --(since you can remove them)
+        --quick hack fix
+        for i = 1, GetNumSockets() do
+            if not GetExistingSocketLink(i) then
+                table.insert(socketTypes, GetSocketTypes(i))
+                dbpr("Inserting", GetSocketTypes(i))
+            end
+        end
+    else
+        for i = 1, GetNumSockets() do
+            table.insert(socketTypes, GetSocketTypes(i))
+        end
+    end
+
+    --local socketType = GetSocketTypes(1)
+    if socketTypes then return socketTypes end
 
     --return prismatic as a fallback
-    return SLOT_INFO[EMPTY_SOCKET_PRISMATIC].Name
+    --(why did I do this?)
+    return {SLOT_INFO[EMPTY_SOCKET_PRISMATIC].Name}
 
 end
 
@@ -314,31 +370,17 @@ local function currentItemAlreadyGemmed(isSlotButton)
     
 end
 
-local function shouldShowGem(isSlotButton, gemID, gemLink, socketType)
+local function shouldShowGem(isSlotButton, gemID, gemLink, socketTypes)
 
-    --this is not good but I don't feel like making it better, pls stop adding socket types
-
- 
-    if socketType == "Primordial" then
-        if not isPrimordialGem(gemID) then
-            return
-        end
-    else --regular socket
-        if isPrimordialGem(gemID) then
-            return
-        end
+    if GEM_TYPES_SPECIAL[gemID] then
+        --if GEM_TYPES_SPECIAL[gemID] ~= socketType then return end
+        --dbpr(socketTypes, GEM_TYPES_SPECIAL[gemID])
+        if not tContains(socketTypes, GEM_TYPES_SPECIAL[gemID]) then return end
+    else
+        if socketTypes[1] ~= "Prismatic" then return end
     end
 
-    if socketType == "Tinker" then
-
-        if not isTinkerGem(gemID) then
-            return
-        end
-    else --regular socket
-        if isTinkerGem(gemID) then
-            return
-        end
-    end
+    --if socketType ~= "Prismatic" and GEM_TYPES_SPECIAL[gemID] then return end
 
     --show the gem if its attached to the socket frame and the gem isn't the same as what's already socketed
     --always show the gem if there are multiple sockets (fix later to check all sockets?)
@@ -387,12 +429,12 @@ function DSH:UpdateGemButtons(isSlotButton)
 	end
 	
 	local buttonCount = 1
-    local socketType = getCurrentSocketingType(isSlotButton)
+    local socketTypes = getCurrentSocketingTypes(isSlotButton)
     --dbpr(socketType)
 	--DSH.GBC.isDomination = isDomination
 	DSH.GBC.isSlotContainer = isSlotButton
 
-    if socketType == "Tinker" and currentItemAlreadyGemmed(isSlotButton) then
+    if socketTypes[1] == "Tinker" and currentItemAlreadyGemmed(isSlotButton) then
         --Reail: Tinker ALready Gemmed, add the remove item
         dbpr("Tinker Already Gemmed")
         DSH:UpdateGemButton("remove", nil, 202087)
@@ -413,12 +455,23 @@ function DSH:UpdateGemButtons(isSlotButton)
         end
 
         DSH:ToggleButton(DSH.gemButtons["remove"], GetItemCount(202087) > 0 and true or false)
+    elseif SINGING_SOCKET[socketTypes[1]] and isSlotButton and currentItemAlreadyGemmed(isSlotButton) then
+
+        dbpr("Singing Slot Socketed")
+        DSH:UpdateGemButton("remove", nil, 1059115, nil, true)
+        buttonCount = 2
+
+        --DSH.SBC.curSlotBtn.socketNum
+        DSH.gemButtons["remove"]:SetAttribute("macrotext", "/script SocketInventoryItem("..DSH.SBC.curSlotBtn.slot..")\n"
+                                                        .."/use "..DSH.SBC.curSlotBtn.slot.."\n"
+                                                        .."/click ItemSocketingSocket"..DSH.SBC.curSlotBtn.socketNum.."\n"
+                                                        .."/script HideUIPanel(ItemSocketingFrame)")
 
     else
         --We actually need to show gems to put in the item
 
         for gemID, gemInfo in pairs(DSH.gemsInBags) do
-            if shouldShowGem(isSlotButton, gemID, gemInfo.itemLink, socketType) then
+            if shouldShowGem(isSlotButton, gemID, gemInfo.itemLink, socketTypes) then
 
                 DSH:UpdateGemButton(buttonCount, gemInfo.itemLink, gemInfo.itemID, gemInfo.quality)
 
@@ -606,13 +659,25 @@ function DSH:GemButtonPress(ID, itemName, quality, slot, socketNum, force, frame
 
     --dbpr("WOULD EXECUTE PUT", itemName, "into slot", slot, "socket num", socketNum)
 
-    --if true then return end
+    --quick fix for 11.0.7 singing gems
+    if not DSH.GBC.isSlotContainer and SINGING_SOCKET[GEM_TYPES_SPECIAL[ID]] then
+        for i = 1, GetNumSockets() do
+            if not GetExistingSocketLink(i) then
+                if GetSocketTypes(i) == GEM_TYPES_SPECIAL[ID] then
+                    DSH:UseContainerItemByID(ID, i)
+                    AcceptSockets()
+                    --CloseSocketInfo()
+                end
+            end
+        end
+        return
+    end
 
-	local shardInfo = GetNewSocketInfo(1)
+	local newGemInfo = GetNewSocketInfo(1)
 
 	--GetNewSocketInfo for some reason returns a string of variables?? Maybe I'm dumb
 	--I don't remember why I did this
-	if not shardInfo or (shardInfo and not string.match(shardInfo, itemName)) then
+	if not newGemInfo or (newGemInfo and not string.match(newGemInfo, itemName)) then
 		
 		if DSH.GBC.isSlotContainer then
 
@@ -621,7 +686,7 @@ function DSH:GemButtonPress(ID, itemName, quality, slot, socketNum, force, frame
 			CloseSocketInfo()
 		else
             --If there are two gem sockets pickup the gem instead of putting it in
-            if ItemSocketingSocket2 and ItemSocketingSocket2:IsVisible() then
+            if socketingItemIsMultiSocket() then
                 --dbpr("TWO GEMS")
                 DSH:UseContainerItemByID(ID, nil)
             else
@@ -789,6 +854,7 @@ function DSH:UpdateGemButton(i, itemLink, itemID, quality, isSpell, _, bag, slot
 		createGemButton(i)
 	end
 
+    --dbpr("isSpell", isSpell)
     --if it's a spell just pass the icon as itemID, messy but w/e
 	local itemIcon = isSpell and itemID or GetItemIcon(itemID)
 
@@ -816,7 +882,11 @@ function DSH:UpdateGemButton(i, itemLink, itemID, quality, isSpell, _, bag, slot
 		gemButton.itemName = ""
 	end
 
-    gemButton:SetText(GetItemCount(itemID))
+    if isSpell then
+        gemButton:SetText("")
+    else
+        gemButton:SetText(GetItemCount(itemID))
+    end
     updateButtonTextLocation(gemButton, "BOTTOMRIGHT", "BOTTOMRIGHT")
 	--end
 	
@@ -1317,20 +1387,62 @@ local function itemLoaded(itemsFound, itemLink, s)
     end
 
 	local buttonCount = 1
-	for slotType, slotTypeInfo in pairs(quickSlotInfo) do
-		for slot, slotGemInfo in DSH:PairsByKeys(slotTypeInfo) do
-            
-            for socketNum, slotInfo in pairs(slotGemInfo) do
 
-            --print(slot, slotGemInfo)
 
-			    --dbpr("HERE", slotType)
-                updateEmptySlotButton(slot, buttonCount, slotInfo.slotType, slotInfo.itemLink, socketNum, slotInfo.slotTex)
-                getSlotGemInfo(buttonCount, slotInfo.gemID, slotInfo.itemLink)
-                buttonCount = buttonCount + 1
+    for i, slotInfo in ipairs(SLOT_INFO_ORDERED) do
+        dbpr(i, slotInfo.Name)
+        if quickSlotInfo[slotInfo.Name] then
+
+
+            for slot, slotGemInfo in DSH:PairsByKeys(quickSlotInfo[slotInfo.Name]) do
+                for socketNum, slotInfo in pairs(slotGemInfo) do
+                --print(slot, slotGemInfo)
+                    --dbpr("HERE", slotType)
+                    updateEmptySlotButton(slot, buttonCount, slotInfo.slotType, slotInfo.itemLink, socketNum, slotInfo.slotTex)
+                    getSlotGemInfo(buttonCount, slotInfo.gemID, slotInfo.itemLink)
+                    buttonCount = buttonCount + 1
+                end
             end
-		end
+        end
 	end
+
+
+    --for slotType, slotTypeInfo in DSH:PairsByKeys(quickSlotInfo) do
+
+    --    dbpr(slotType)
+    --end
+
+	--for slotType, slotTypeInfo in DSH:PairsByKeys(quickSlotInfo) do
+
+    --    --dbpr(slotType)
+
+	--	for slot, slotGemInfo in DSH:PairsByKeys(slotTypeInfo) do
+    --        for socketNum, slotInfo in pairs(slotGemInfo) do
+    --        --print(slot, slotGemInfo)
+	--		    --dbpr("HERE", slotType)
+    --            updateEmptySlotButton(slot, buttonCount, slotInfo.slotType, slotInfo.itemLink, socketNum, slotInfo.slotTex)
+    --            getSlotGemInfo(buttonCount, slotInfo.gemID, slotInfo.itemLink)
+    --            buttonCount = buttonCount + 1
+    --        end
+	--	end
+	--end
+
+    --for i, slotInfo in pairs(SLOT_INFO_ORDERED) do
+
+    --    if quickSlotInfo[slotInfo.Name] then
+    --    --dbpr(slotType)
+
+    --        for slot, slotGemInfo in DSH:PairsByKeys(slotTypeInfo) do
+    --            for socketNum, slotInfo in pairs(slotGemInfo) do
+    --            --print(slot, slotGemInfo)
+    --                --dbpr("HERE", slotType)
+    --                updateEmptySlotButton(slot, buttonCount, slotInfo.slotType, slotInfo.itemLink, socketNum, slotInfo.slotTex)
+    --                getSlotGemInfo(buttonCount, slotInfo.gemID, slotInfo.itemLink)
+    --                buttonCount = buttonCount + 1
+    --            end
+    --        end
+    --    end
+	--end
 
 	hideButtons(DSH.slotButtons, buttonCount)
 
@@ -1401,7 +1513,7 @@ function EF:CHARACTER_FRAME_SHOW()
 	--DSH.SBC = DSH.SBC or createSlotButtonContainer()
 	
 	--delay update because it breaks sometimes if you don't
-		--nevermind I did some convoluted bullshit to make it work
+		--nevermind I did some convoluted nonsense to make it work
 	-- C_Timer.After(0.1, function() DSH:UpdateSlotButtons() end)
 	DSH:UpdateSlotButtons()
 	slotInfo = ItemLocation:CreateFromEquipmentSlot(1)

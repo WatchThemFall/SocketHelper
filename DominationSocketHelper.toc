@@ -1,4 +1,4 @@
-## Interface: 110005
+## Interface: 110007
 ## Title: Socket Helper
 ## Author: Metriss - Stormrage
 ## Version: @project-version@
@@ -21,6 +21,6 @@ locales\zhCN.lua
 locales\zhTW.lua
 
 main.lua
-remix.lua
+#remix.lua
 #ldb.lua
 options.lua
