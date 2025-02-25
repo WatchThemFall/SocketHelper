@@ -66,6 +66,13 @@ local function DSHPrint(text)
 	print("|cFFFC0316DSH: |r" .. text)
 end
 
+local function dbpr(...)
+	if not DSH.debug then return end
+	print("|cFFF60404DSHDB:|r",...)
+end
+
+DSH.dbpr = dbpr
+
 --Format: [gem ID] = "GetSocketTypes(n)"
 local GEM_TYPES_SPECIAL = {
     [204012] = "Primordial",
@@ -162,6 +169,8 @@ local SINGING_SOCKET = {
     ["SingingSea"] = true,
 }
 
+
+
 --slotName = locale string for socket text
 --Name = what GetSocketTypes(n) returns
 --This is the order that the gem slots under the character frame show up in
@@ -171,23 +180,17 @@ local SLOT_INFO_ORDERED = {
     {Name = "Tinker", Icon = 2958630, slotName = EMPTY_SOCKET_TINKER},
     {Name = "Cogwheel", Icon = 407324, slotName = EMPTY_SOCKET_COGWHEEL},
     {Name = "Primordial", Icon = 4095404, slotName = EMPTY_SOCKET_PRIMORDIAL},
-    {Name = "SingingThunder", Icon = 136259, slotName = EMPTY_SOCKET_SINGINGTHUNDER},
-    {Name = "SingingSea", Icon = 136256, slotName = EMPTY_SOCKET_SINGINGSEA},
-    {Name = "SingingWind", Icon = 136258, slotName = EMPTY_SOCKET_SINGINGWIND},
+    {Name = "SingingThunder", Icon = 136259, slotName = EMPTY_SOCKET_SINGINGTHUNDER or EMPTY_SOCKET_SINGING_THUNDER}, --they keep changing name back & forth?
+    {Name = "SingingSea", Icon = 136256, slotName = EMPTY_SOCKET_SINGINGSEA or EMPTY_SOCKET_SINGING_SEA},
+    {Name = "SingingWind", Icon = 136258, slotName = EMPTY_SOCKET_SINGINGWIND or EMPTY_SOCKET_SINGING_WIND},
 }
 
 --creating an additional dictionary to quickly check if items have gem slots from tooltip scans.
 local SLOT_INFO = {}
 for i, slotInfo in pairs(SLOT_INFO_ORDERED) do
+    --dbpr(slotInfo.slotName)
     SLOT_INFO[slotInfo.slotName] = slotInfo
 end
-
-local function dbpr(...)
-	if not DSH.debug then return end
-	print("|cFFF60404DSHDB:|r",...)
-end
-
-DSH.dbpr = dbpr
 
 function EF:ADDON_LOADED(addon)
 	if addon == addonName then
@@ -305,9 +308,10 @@ local function createGemButtonContainer()
 	frame:SetBackdropColor(0, 0, 0, .75)
 	frame:SetBackdropBorderColor(0, 0, 0, .9)
 
-    hooksecurefunc(frame, "Show", function() EF:RegisterEvent("BAG_UPDATE_DELAYED") end)
-    hooksecurefunc(frame, "Hide", function() EF:UnregisterEvent("BAG_UPDATE_DELAYED") end)
+    --hooksecurefunc(frame, "Show", function() EF:RegisterEvent("BAG_UPDATE_DELAYED") end)
+    --hooksecurefunc(frame, "Hide", function() EF:UnregisterEvent("BAG_UPDATE_DELAYED") end)
 
+    EF:RegisterEvent("BAG_UPDATE_DELAYED") 
     --frame:SetScript("OnShow", function() dbpr("SHOW") end)
     --frame:SetScript("OnHide", function() dbpr("HIDE") end)
     DSH.GBC = frame
@@ -1616,6 +1620,7 @@ updateThrottle:SetScript("OnUpdate", function()
 	
 	if invChanged then
 		invChanged = false
+
 		DSH.checkForGems = true
 
 		--DSH.currentSet = DSH:GetCurrentShardSet()
@@ -1645,12 +1650,14 @@ function DSH:RemixBagUpdate()
 end
 
 function EF:UNIT_INVENTORY_CHANGED(unit)
+    --dbpr("UNIT_INVENTORY_CHANGED", unit)
 	if unit == 'player' then
 		invChanged = true
 	end
 end
 
 function EF:BAG_UPDATE_DELAYED(unit)
+    --dbpr("BAG_UPDATE_DELAYED", unit)
 	invChanged = true
 end
 
