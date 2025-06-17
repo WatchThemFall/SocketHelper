@@ -239,12 +239,12 @@ local slotNames = {"Head", "Neck", "Shoulder", "Shirt", "Chest",
 				"Finger0", "Finger1", "Trinket0", "Trinket1", "Back"}
 				
 
-function DSH:IsDominationShard(ID)
-	local ID = tonumber(ID)
-	if shardIDs[ID] then
-		return true
-	end
-end
+--function DSH:IsDominationShard(ID)
+--	local ID = tonumber(ID)
+--	if shardIDs[ID] then
+--		return true
+--	end
+--end
 
 function DSH:GetBagFreeSpace()
 	local totalFreeSlots = 0
@@ -1285,10 +1285,21 @@ function DSH:RemoveGemsFromItemLink(itemLink)
     --Don't really know how else to do this, can't get it to work with gsub
     if not itemLink then return end
 
-    local item, itemID, enchantID, gem1, gem2, gem3, gem4, extra = strsplit(":", itemLink, 8)
+    --local item, itemID, enchantID, gem1, gem2, gem3, gem4, extra = strsplit(":", itemLink, 8)
+
+    ----------------------------------------
+    --THEY CHANGED ITEM LINKS SO THESE NAMES ARE WRONG BESIDES GEMS. Too lazy too figure it out properly (it doesn't really matter)
+    ---------------------------------------_
+    local item, itemID, enchantID, whoKnows, gem1, gem2, gem3, gem4, extra = strsplit(":", itemLink, 9)
+
+    --local one, two = strsplit(":", itemLink, 2)
+
+    --print("item", item, "itemID", itemID, "enchantID", enchantID, "gem1", gem1, "gem2", gem2, "gem3", gem3, "gem4", gem4)
+    --print(one, two)
+
     --dbpr(extra)
     --dbpr("enchantid", enchantID, "gem1", gem1, "gem2", gem2, "gem3", gem3, "gem4", gem4)
-    return item .. ":" .. itemID .. ":" .. enchantID .. ":::::" .. extra, {tonumber(gem1), tonumber(gem2), tonumber(gem3), tonumber(gem4)}
+    return item .. ":" .. itemID .. ":" .. enchantID .. ":".. whoKnows .. ":::::" .. extra, {tonumber(gem1), tonumber(gem2), tonumber(gem3), tonumber(gem4)}
 end
 
 function DSH:GetGemSlotInfo(itemLink)
