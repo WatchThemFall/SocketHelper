@@ -161,6 +161,15 @@ local GEM_TYPES_SPECIAL = {
     [228640] = "SingingWind",
     [228635] = "SingingWind",
 
+    [238037] = "Fiber",
+    [238039] = "Fiber",
+    [238040] = "Fiber",
+    [238041] = "Fiber",
+    [238042] = "Fiber",
+    [238044] = "Fiber",
+    [238045] = "Fiber",
+    [238046] = "Fiber",
+
 }
 
 local SINGING_SOCKET = {
@@ -180,6 +189,7 @@ local SLOT_INFO_ORDERED = {
     {Name = "Tinker", Icon = 2958630, slotName = EMPTY_SOCKET_TINKER},
     {Name = "Cogwheel", Icon = 407324, slotName = EMPTY_SOCKET_COGWHEEL},
     {Name = "Primordial", Icon = 4095404, slotName = EMPTY_SOCKET_PRIMORDIAL},
+    {Name = "Fiber", Icon = 136260, slotName = EMPTY_SOCKET_FIBER},
     {Name = "SingingThunder", Icon = 136259, slotName = EMPTY_SOCKET_SINGINGTHUNDER or EMPTY_SOCKET_SINGING_THUNDER}, --they keep changing name back & forth?
     {Name = "SingingSea", Icon = 136256, slotName = EMPTY_SOCKET_SINGINGSEA or EMPTY_SOCKET_SINGING_SEA},
     {Name = "SingingWind", Icon = 136258, slotName = EMPTY_SOCKET_SINGINGWIND or EMPTY_SOCKET_SINGING_WIND},
@@ -459,9 +469,9 @@ function DSH:UpdateGemButtons(isSlotButton)
         end
 
         DSH:ToggleButton(DSH.gemButtons["remove"], GetItemCount(202087) > 0 and true or false)
-    elseif SINGING_SOCKET[socketTypes[1]] and isSlotButton and currentItemAlreadyGemmed(isSlotButton) then
+    elseif (socketTypes[1] == "Fiber" or SINGING_SOCKET[socketTypes[1]]) and isSlotButton and currentItemAlreadyGemmed(isSlotButton) then
 
-        dbpr("Singing Slot Socketed")
+        dbpr(socketTypes[1], "Slot Socketed")
         DSH:UpdateGemButton("remove", nil, 1059115, nil, true)
         buttonCount = 2
 
@@ -1081,6 +1091,7 @@ local function updateEmptySlotButton(slot, i, slotType, showLink, socketNum, slo
     --136264
     --dbpr("slotType", slotType)
 	DSH.slotButtons[i].tex:SetTexture(slotTex or 458977)
+
 	--DSH.slotButtons[i].tex:SetAtlas((SLOT_INFO[slotType] and SLOT_INFO[slotType].Atlas) and SLOT_INFO[slotType].Atlas or "")
     DSH.slotButtons[i].tex:SetAllPoints()
     updateGemButtonQualityTexture(DSH.slotButtons[i], nil)
@@ -1403,17 +1414,14 @@ local function itemLoaded(itemsFound, itemLink, s)
 
 	local buttonCount = 1
 
-
     for i, slotInfo in ipairs(SLOT_INFO_ORDERED) do
         dbpr(i, slotInfo.Name)
         if quickSlotInfo[slotInfo.Name] then
-
-
             for slot, slotGemInfo in DSH:PairsByKeys(quickSlotInfo[slotInfo.Name]) do
                 for socketNum, slotInfo in pairs(slotGemInfo) do
-                --print(slot, slotGemInfo)
-                    --dbpr("HERE", slotType)
+
                     updateEmptySlotButton(slot, buttonCount, slotInfo.slotType, slotInfo.itemLink, socketNum, slotInfo.slotTex)
+                    --dbpr(slotInfo.slotTex)
                     getSlotGemInfo(buttonCount, slotInfo.gemID, slotInfo.itemLink)
                     buttonCount = buttonCount + 1
                 end
