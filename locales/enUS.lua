@@ -53,3 +53,5 @@ L["STAY_OPEN_DESC"] = "Keep the quick slot bar expanded after you close the char
 L["SOCKET_WINDOW"] = "Socket Window"
 L["AUTO_ACCEPT"] = "Auto Accept"
 L["AUTO_ACCEPT_DESC"] = "Auto accept gems without requiring you to click apply."
+
+L["REMOVE_ERROR_MSG"] = "Patch 11.2.5 broke this.\nClick to remove it manually."

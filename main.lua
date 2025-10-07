@@ -273,7 +273,8 @@ function DSH:UseContainerItemByID(id, socketNum)
 				--dbpr("Picking up", b, s)
 				PickupContainerItem(b, s);
                 if socketNum then
-                    ClickSocketButton(socketNum)
+                    --print("CLICK SOCKET BUTTON")
+                    C_ItemSocketInfo.ClickSocketButton(socketNum)
                     ClearCursor()
                 end
 				break
@@ -336,7 +337,8 @@ end
 --end
 
 local function socketingItemIsMultiSocket()
-    if ItemSocketingSocket2 and ItemSocketingSocket2:IsShown() then return true end
+    if not ItemSocketingFrame then return end
+    if ItemSocketingFrame.SocketingContainer.Socket2 and ItemSocketingFrame.SocketingContainer.Socket2:IsShown() then return true end
 end
 
 local function getCurrentSocketingTypes(isSlotButton)
@@ -419,18 +421,18 @@ local function getGemToggleState(isSlotButton, gemLink, gemID)
     return true
 end
 
-local function allGemSlotsFilled()
-    if ItemSocketingFrame and ItemSocketingFrame:IsVisible() then
-        for i = 1, 3 do
-            if _G["ItemSocketingSocket"..i] and _G["ItemSocketingSocket"..i]:IsVisible() then
-                dbpr(i, "is visible")
-                if not GetExistingSocketLink(i) then return end
-            end
-        end
-        return true
+--local function allGemSlotsFilled()
+--    if ItemSocketingFrame and ItemSocketingFrame:IsVisible() then
+--        for i = 1, 3 do
+--            if _G["ItemSocketingSocket"..i] and _G["ItemSocketingSocket"..i]:IsVisible() then
+--                dbpr(i, "is visible")
+--                if not GetExistingSocketLink(i) then return end
+--            end
+--        end
+--        return true
         
-    end
-end
+--    end
+--end
 
 
 function DSH:UpdateGemButtons(isSlotButton)
@@ -452,6 +454,7 @@ function DSH:UpdateGemButtons(isSlotButton)
         --Reail: Tinker ALready Gemmed, add the remove item
         dbpr("Tinker Already Gemmed")
         DSH:UpdateGemButton("remove", nil, 202087)
+        DSH.gemButtons["remove"].removeMessage = CALENDAR_VIEW_EVENT_REMOVE
         buttonCount = 2
 
         local itemName = GetSocketItemInfo()
@@ -473,13 +476,37 @@ function DSH:UpdateGemButtons(isSlotButton)
 
         dbpr(socketTypes[1], "Slot Socketed")
         DSH:UpdateGemButton("remove", nil, 1059115, nil, true)
+        DSH.gemButtons["remove"].removeMessage = L["REMOVE_ERROR_MSG"] 
         buttonCount = 2
 
+        --print(DSH.SBC.curSlotBtn.slot, DSH.SBC.curSlotBtn.socketNum)
+        --ItemSocketingFrame.SocketingContainer.Socket3
+
+        --ItemSocketingSocket1 = ItemSocketingFrame.SocketingContainer.Socket1
+        --ItemSocketingSocket2 = ItemSocketingFrame.SocketingContainer.Socket2
+        --ItemSocketingSocket3 = ItemSocketingFrame.SocketingContainer.Socket3
+
         --DSH.SBC.curSlotBtn.socketNum
+
+        --/script ItemSocketingFrame.SocketingContainer.Socket3:ClickSocketButton()
+
+        --C_ItemSocketInfo.ClickSocketButton(3)
+
+        --if not ItemSocketingFrame then
+        --    SocketInventoryItem(DSH.SBC.curSlotBtn.slot)
+        --    HideUIPanel(ItemSocketingFrame)
+        --end
+
+        --doesn't work anymore in 11.2.5, and I don't know how to fix it
         DSH.gemButtons["remove"]:SetAttribute("macrotext", "/script SocketInventoryItem("..DSH.SBC.curSlotBtn.slot..")\n"
-                                                        .."/use "..DSH.SBC.curSlotBtn.slot.."\n"
-                                                        .."/click ItemSocketingSocket"..DSH.SBC.curSlotBtn.socketNum.."\n"
-                                                        .."/script HideUIPanel(ItemSocketingFrame)")
+                                                        .."/use "..DSH.SBC.curSlotBtn.slot.."\n")
+                                                        --.."/click ItemSocketingSocket"..DSH.SBC.curSlotBtn.socketNum.."\n"
+                                                        --.."/click ItemSocketingFrame.SocketingContainer.Socket"..DSH.SBC.curSlotBtn.socketNum.."\n"
+                                                        --.."/script ItemSocketingFrame.SocketingContainer.Socket3:ClickSocketButton()\n"
+                                                        --.."/script HideUIPanel(ItemSocketingFrame)")
+
+
+        --DSH.gemButtons["remove"]:SetAttribute("Function", function() print("TEST") end)
 
     else
         --We actually need to show gems to put in the item
@@ -668,6 +695,8 @@ function DSH:GemButtonPress(ID, itemName, quality, slot, socketNum, force, frame
                 return
             end
             SocketInventoryItem(slot or DSH.SBC.curSlotBtn.slot)
+
+            --C_ItemSocketInfo.ClickSocketButton(2)
         end
 	end
 
@@ -761,12 +790,13 @@ local function createGemButton(i)
         frame:RegisterForClicks("AnyUp", "AnyDown")
 		frame:SetAttribute("type", "macro")
         frame:SetFrameStrata("HIGH")
+        frame.removeMessage = CALENDAR_VIEW_EVENT_REMOVE
         frame:SetScript("OnEnter", function()
             DSH.GBC.curGemBtn = frame
             if DSH.GBC.isSlotContainer then
-                local warningText = ""
-                DSH:ToggleInfoTooltip(true, CALENDAR_VIEW_EVENT_REMOVE.. warningText, DSH.GBC)
-            end    
+                --local warningText = ""
+                DSH:ToggleInfoTooltip(true, frame.removeMessage, DSH.GBC)
+            end
         end)
         frame:SetScript("OnLeave", function()
             DSH.GBC.curGemBtn = nil
