@@ -1048,16 +1048,34 @@ local function getLastCharTab()
 	return frame
 end
 
+local function GetAddonCategory()
+    local i = 1
+    repeat
+        local Title, ParentCategoryID, Something = GetCategoryInfo(i)
+        print(Title, ParentCategoryID, Something)
+        i = i + 1
+    until not Title
+
+end
+
+
 local function slotExtendClick(frame, clickType)
 	if clickType == "LeftButton" then
 		DSH.db.char.quickslots.extended = not DSH.db.char.quickslots.extended
 		frame:SetText(DSH.db.char.quickslots.extended and "<" or ">")
 		DSH:UpdateSlotButtons()
 	else
-		--InterfaceOptionsFrame_OpenToCategory(GetAddOnMetadata(addonName, "Title"))
-		--InterfaceOptionsFrame_OpenToCategory(GetAddOnMetadata(addonName, "Title"))
-        Settings.OpenToCategory(GetAddOnMetadata(addonName, "Title"))
-        Settings.OpenToCategory(GetAddOnMetadata(addonName, "Title"))
+	
+        --local category = Settings.GetCategory(GetAddOnMetadata(addonName, "Title"))
+
+        --for k, v in pairs(category) do
+        --    print(k, v)
+        --end
+        Settings.OpenToCategory(0)
+        --Settings.OpenToCategory(category:GetID(), GetAddOnMetadata(addonName, "Title"))
+        --Settings.OpenToCategory(12, GetAddOnMetadata(addonName, "Title"))
+        --Settings.OpenToCategory(GetAddOnMetadata(addonName, "Title"))
+
 	end
 end
 
@@ -1216,7 +1234,7 @@ function DSH:UpdateCurSlotGlow(btnTable, force)
                 if btn and btn.slot then
                     --if btn contains bag information, it's not equipped. No glow
                     if not btn.bag then
-                        ActionButton_ShowOverlayGlow(_G["Character"..slotNames[btn.slot].."Slot"])
+                        ActionButtonSpellAlertManager:ShowAlert(_G["Character"..slotNames[btn.slot].."Slot"])
                     end
                     --AutoCastOverlay_AutoCastStart(btn)
                     btn:ShowAutoCastEnabled(true)
@@ -1229,7 +1247,7 @@ function DSH:UpdateCurSlotGlow(btnTable, force)
 
     for i = 1, MAX_SLOT do
         if not glowSlots[i] then
-            ActionButton_HideOverlayGlow(_G["Character"..slotNames[i].."Slot"])
+            ActionButtonSpellAlertManager:HideAlert(_G["Character"..slotNames[i].."Slot"])
         end
 	end
 end

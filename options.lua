@@ -119,6 +119,10 @@ local function createBlizzOptions()
 	--local blizzPanel = config:AddToBlizOptions("PLT-General", options.args.general.name, "PLT")
 	local blizzPanel = dialog:AddToBlizOptions("DSH", ADDON_TITLE)
 	
+    --local category = Settings.RegisterVerticalLayoutCategory("DSH")
+    --Settings.RegisterAddOnCategory(category)
+    --DSH_ADDON.category = category
+
 	return blizzPanel
 
 end
@@ -128,7 +132,11 @@ local addonLoaded = CreateFrame("FRAME") -- Variables
  addonLoaded:SetScript("OnEvent",function(self, event, arg1)
 
 	if arg1 == "DominationSocketHelper" then
-		createBlizzOptions()
+		local frame, frameName = createBlizzOptions()
+        --print(frame, frameName)
+        --for k, v in pairs(frame) do
+        --    print(k, v) 
+        --end
 	end
 	
 end)

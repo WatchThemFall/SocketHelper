@@ -1,4 +1,4 @@
-## Interface: 110205
+## Interface: 120000, 120001
 ## Title: Socket Helper
 ## Author: Metriss - Stormrage
 ## Version: @project-version@
