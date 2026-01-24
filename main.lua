@@ -938,21 +938,24 @@ function DSH:UpdateGemButton(i, itemLink, itemID, quality, isSpell, _, bag, slot
 end
 
 function DSH:IsRemix()
-    if DSH.remixChecked then return DSH.isRemix end
 
-    DSH.remixChecked = true
+    return false
 
-    AuraUtil.ForEachAura("player", "HELPFUL", nil, function(name, icon, _, _, _, _, _, _, _, spellId)
-        if spellId == 424143 then
-            DSH.isRemix = true
-            DSH.remixGemType = {}
-            --DSH.remixGemSearch = {PRISMATIC_GEM}
-            dbpr("MOP Remix: True")
-            return
-        end
-    end)
+    --if DSH.remixChecked then return DSH.isRemix end
+
+    --DSH.remixChecked = true
+
+    --AuraUtil.ForEachAura("player", "HELPFUL", nil, function(name, icon, _, _, _, _, _, _, _, spellId)
+    --    if spellId == 424143 then
+    --        DSH.isRemix = true
+    --        DSH.remixGemType = {}
+    --        --DSH.remixGemSearch = {PRISMATIC_GEM}
+    --        dbpr("MOP Remix: True")
+    --        return
+    --    end
+    --end)
     
-    return DSH.isRemix
+    --return DSH.isRemix
 
 end
 
