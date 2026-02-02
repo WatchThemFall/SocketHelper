@@ -1068,16 +1068,8 @@ local function slotExtendClick(frame, clickType)
 		frame:SetText(DSH.db.char.quickslots.extended and "<" or ">")
 		DSH:UpdateSlotButtons()
 	else
-	
-        --local category = Settings.GetCategory(GetAddOnMetadata(addonName, "Title"))
 
-        --for k, v in pairs(category) do
-        --    print(k, v)
-        --end
-        Settings.OpenToCategory(0)
-        --Settings.OpenToCategory(category:GetID(), GetAddOnMetadata(addonName, "Title"))
-        --Settings.OpenToCategory(12, GetAddOnMetadata(addonName, "Title"))
-        --Settings.OpenToCategory(GetAddOnMetadata(addonName, "Title"))
+        Settings.OpenToCategory(DSH.category)
 
 	end
 end

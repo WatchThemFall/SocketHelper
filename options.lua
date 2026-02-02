@@ -118,10 +118,17 @@ local function createBlizzOptions()
 	config:RegisterOptionsTable("DSH", options)
 	--local blizzPanel = config:AddToBlizOptions("PLT-General", options.args.general.name, "PLT")
 	local blizzPanel = dialog:AddToBlizOptions("DSH", ADDON_TITLE)
+
+    --for k, v in pairs(blizzPanel) do
+    --    print(k, v)
+    --end
 	
+    --print(blizzPanel.name)
+
+    --Settings.OpenToCategory(blizzPanel.name)
     --local category = Settings.RegisterVerticalLayoutCategory("DSH")
     --Settings.RegisterAddOnCategory(category)
-    --DSH_ADDON.category = category
+    DSH.category = blizzPanel.name
 
 	return blizzPanel
 
