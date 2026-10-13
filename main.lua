@@ -15,7 +15,6 @@ DSH.VERSION = GetAddOnMetadata(addonName, "Version")
 DSH.AUTHOR = GetAddOnMetadata(addonName, "Author")
 
 local GetItemGem = GetItemGem
-local GetSocketItemInfo = GetSocketItemInfo
 local GetInventoryItemLink = GetInventoryItemLink
 local GetItemInfoInstant = GetItemInfoInstant or C_Item.GetItemInfoInstant
 --local GetContainerItemLink = C_Container.GetContainerItemLink
@@ -30,13 +29,19 @@ local GetContainerItemID = GetContainerItemID or C_Container.GetContainerItemID
 local SocketContainerItem = C_Container.SocketContainerItem
 local GetContainerItemInfo = C_Container.GetContainerItemInfo
 local SocketInventoryItem = SocketInventoryItem
-local GetExistingSocketLink = GetExistingSocketLink
+local GetExistingSocketLink = GetExistingSocketLink or C_ItemSocketInfo.GetExistingSocketLink
 local GetItemIcon = GetItemIcon or C_Item.GetItemIconByID
 local GetItemCount = GetItemCount or C_Item.GetItemCount
 local GetItemInfo = GetItemInfo or C_Item.GetItemInfo
-local GetNumSockets = GetNumSockets
+local GetNumSockets = GetNumSockets or  C_ItemSocketInfo.GetNumSockets
+local GetNewSocketInfo = GetNewSocketInfo or C_ItemSocketInfo.GetNewSocketInfo
+local CloseSocketInfo = CloseSocketInfo or C_ItemSocketInfo.CloseSocketInfo
+local GetNewSocketLink = GetNewSocketLink or C_ItemSocketInfo.GetNewSocketLink
+local GetSocketItemInfo = GetSocketItemInfo or  C_ItemSocketInfo.GetSocketItemInfo
+
+local AcceptSockets = AcceptSockets or C_ItemSocketInfo.AcceptSockets
 --local GetSocketInfo = GetSocketInfo
-local GetSocketTypes = GetSocketTypes
+local GetSocketTypes = GetSocketTypes or C_ItemSocketInfo.GetSocketTypes
 
 local UNIQUE_EQUIP_PATTERN = _G.ITEM_LIMIT_CATEGORY_MULTIPLE:gsub("%(%%d%)", "%%(%%d%%)"):gsub("%-", "%%-"):gsub('%%s', '(.+)')
 
